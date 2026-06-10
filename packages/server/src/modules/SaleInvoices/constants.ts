@@ -2,18 +2,16 @@ export const SendSaleInvoiceQueue = 'SendSaleInvoiceQueue';
 export const SendSaleInvoiceMailJob = 'SendSaleInvoiceMailJob';
 
 export const DEFAULT_INVOICE_MAIL_SUBJECT =
-'Invoice {Invoice Number} from {Company Name} for {Customer Name}';
+'Invoice {Invoice Number} from {Company Name}';
 export const DEFAULT_INVOICE_MAIL_CONTENT = `Hi {Customer Name},
 
-Here's invoice # {Invoice Number} for {Invoice Amount}
+Please find attached invoice {Invoice Number} for {Invoice Amount}.
 
-The amount outstanding of {Invoice Due Amount} is due on {Invoice Due Date}.
+The amount of {Invoice Due Amount} is due by {Invoice Due Date}, payable by bank transfer (details on the invoice).
 
-From your online payment page you can print a PDF or view your outstanding bills.
+If you have any questions, just reply to this email.
 
-If you have any questions, please let us know.
-
-Thanks,
+Best regards,
 {Company Name}
 `;
 
