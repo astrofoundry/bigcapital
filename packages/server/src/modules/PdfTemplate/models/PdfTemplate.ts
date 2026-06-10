@@ -57,6 +57,13 @@ export class PdfTemplateModel extends TenantBaseModel {
   }
 
   /**
+   * Company logo uri from the template attributes.
+   */
+  get companyLogoUri() {
+    return this.attributes?.companyLogoUri ?? null;
+  }
+
+  /**
    * Relationship mapping.
    */
   static get relationMappings() {
