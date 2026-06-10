@@ -1,6 +1,5 @@
 import { CSSProperties } from 'react';
 import {
-  Button,
   Section,
   Heading,
   Text,
@@ -8,7 +7,6 @@ import {
   Column,
   render,
 } from '@react-email/components';
-import isEmpty from 'lodash.isempty';
 import { EmailTemplateLayout } from './EmailTemplateLayout';
 import { EmailTemplate } from './EmailTemplate';
 
@@ -142,87 +140,6 @@ export const InvoicePaymentEmail: React.FC<
           </Section>
 
           <Text style={invoiceMessageStyle}>{invoiceMessage}</Text>
-          <Button
-            href={viewInvoiceButtonUrl}
-            style={{
-              ...viewInvoiceButtonStyle,
-              backgroundColor: primaryColor,
-            }}
-          >
-            {viewInvoiceButtonLabel}
-          </Button>
-
-          <Section style={totalsSectionStyle}>
-            {items.map((item, index) => (
-              <Row key={index} style={itemLineRowStyle}>
-                <Column width={'50%'}>
-                  <Text style={listItemLabelStyle}>{item.label}</Text>
-                </Column>
-
-                <Column width={'50%'}>
-                  <Text style={listItemAmountStyle}>
-                    {item.quantity} x {item.rate}
-                  </Text>
-                </Column>
-              </Row>
-            ))}
-
-            <Row style={totalLineRowStyle}>
-              <Column width={'50%'}>
-                <Text style={totalLineItemLabelStyle}>{subtotalLabel}</Text>
-              </Column>
-
-              <Column width={'50%'}>
-                <Text style={totalLineItemAmountStyle}>{subtotal}</Text>
-              </Column>
-            </Row>
-
-            {!isEmpty(discount) && (
-              <Row style={lineRowStyle}>
-                <Column width={'50%'}>
-                  <Text style={listItemLabelStyle}>{discountLabel}</Text>
-                </Column>
-
-                <Column width={'50%'}>
-                  <Text style={listItemAmountStyle}>{discount}</Text>
-                </Column>
-              </Row>
-            )}
-
-            {!isEmpty(adjustment) && (
-              <Row style={lineRowStyle}>
-                <Column width={'50%'}>
-                  <Text style={listItemLabelStyle}>{adjustmentLabel}</Text>
-                </Column>
-
-                <Column width={'50%'}>
-                  <Text style={listItemAmountStyle}>{adjustment}</Text>
-                </Column>
-              </Row>
-            )}
-
-            <Row style={totalLineRowStyle}>
-              <Column width={'50%'}>
-                <Text style={totalLineItemLabelStyle}>{totalLabel}</Text>
-              </Column>
-
-              <Column width={'50%'}>
-                <Text style={totalLineItemAmountStyle}>{total}</Text>
-              </Column>
-            </Row>
-
-            <Row style={dueAmounLineRowStyle}>
-              <Column width={'50%'}>
-                <Text style={dueAmountLineItemLabelStyle}>
-                  {dueAmountLabel}
-                </Text>
-              </Column>
-
-              <Column width={'50%'}>
-                <Text style={dueAmountLineItemAmountStyle}>{dueAmount}</Text>
-              </Column>
-            </Row>
-          </Section>
         </Section>
       </EmailTemplate>
     </EmailTemplateLayout>
