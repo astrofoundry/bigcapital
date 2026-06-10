@@ -32,9 +32,10 @@ export class GetPdfTemplateService {
       .throwIfNotFound();
 
     const companyLogoKey = template.attributes?.companyLogoKey;
-    let companyLogoUri: string | null = null;
+    let companyLogoUri: string | null =
+      template.attributes?.companyLogoUri ?? null;
 
-    if (companyLogoKey) {
+    if (!companyLogoUri && companyLogoKey) {
       try {
         companyLogoUri =
           await this.getPresignedUrlService.getPresignedUrl(companyLogoKey);
