@@ -1,4 +1,5 @@
-FROM bigcapitalhq/server:latest as build
+ARG SERVER_IMAGE=ghcr.io/astrofoundry/bigcapital-server:astrofoundry
+FROM ${SERVER_IMAGE} as build
 
 ARG DB_HOST= \
   DB_USER= \
