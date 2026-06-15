@@ -1,25 +1,23 @@
 ARG SERVER_IMAGE=ghcr.io/astrofoundry/bigcapital-server:astrofoundry
-FROM ${SERVER_IMAGE} as build
+FROM ${SERVER_IMAGE} AS build
 
+# DB credentials (DB_PASSWORD/SYSTEM_DB_PASSWORD) are provided at runtime via the
+# stack's environment, not baked into the image.
 ARG DB_HOST= \
   DB_USER= \
-  DB_PASSWORD= \
   DB_CHARSET= \
   # System database.
   SYSTEM_DB_NAME= \
-  SYSTEM_DB_PASSWORD= \
   SYSTEM_DB_USER= \
   SYSTEM_DB_HOST= \
   SYSTEM_DB_CHARSET=
 
 ENV DB_HOST=$DB_HOST \
   DB_USER=$DB_USER \
-  DB_PASSWORD=$DB_PASSWORD \
   DB_CHARSET=$DB_CHARSET \
   # System database.
   SYSTEM_DB_HOST=$SYSTEM_DB_HOST \
   SYSTEM_DB_USER=$SYSTEM_DB_USER \
-  SYSTEM_DB_PASSWORD=$SYSTEM_DB_PASSWORD \
   SYSTEM_DB_NAME=$SYSTEM_DB_NAME \
   SYSTEM_DB_CHARSET=$SYSTEM_DB_CHARSET
 
@@ -36,4 +34,4 @@ WORKDIR /app/packages/server
 RUN git clone https://github.com/vishnubob/wait-for-it.git
 
 # Once we listen the mysql port run the migration task.
-CMD ./wait-for-it/wait-for-it.sh mysql:3306 -- sh -c "node dist/cli.js system:migrate:latest && node dist/cli.js tenants:migrate:latest"
+CMD ["./wait-for-it/wait-for-it.sh", "mysql:3306", "--", "sh", "-c", "node dist/cli.js system:migrate:latest && node dist/cli.js tenants:migrate:latest"]
