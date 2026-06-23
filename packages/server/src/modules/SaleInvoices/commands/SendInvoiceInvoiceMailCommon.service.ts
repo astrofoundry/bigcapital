@@ -10,6 +10,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import { SaleInvoice } from '../models/SaleInvoice';
 import { ContactMailNotification } from '@/modules/MailNotification/ContactMailNotification';
 import { SaleInvoiceMailOptions } from '../SaleInvoice.types';
+import { SETTINGS_PROVIDER } from '@/modules/Settings/Settings.types';
+import { SettingsStore } from '@/modules/Settings/SettingsStore';
 
 @Injectable()
 export class SendSaleInvoiceMailCommon {
@@ -21,6 +23,9 @@ export class SendSaleInvoiceMailCommon {
 
     @Inject(SaleInvoice.name)
     private readonly saleInvoiceModel: () => typeof SaleInvoice,
+
+    @Inject(SETTINGS_PROVIDER)
+    private readonly settingsStore: () => SettingsStore,
   ) {}
 
   /**
@@ -46,8 +51,20 @@ export class SendSaleInvoiceMailCommon {
       );
     const formatArgs = await this.getInvoiceFormatterArgs(invoiceId);
 
+    const settingsStore = await this.settingsStore();
+    const bccEnabled = settingsStore.get(
+      { group: 'sales_invoices', key: 'mail_bcc_enabled' },
+      false,
+    );
+    const bccAddress = settingsStore.get(
+      { group: 'sales_invoices', key: 'mail_bcc' },
+      '',
+    );
+    const bcc = bccEnabled && bccAddress ? [bccAddress] : [];
+
     return {
       ...contactMailDefaultOptions,
+      bcc,
       subject: defaultSubject,
       message: defaultMessage,
       attachInvoice: true,

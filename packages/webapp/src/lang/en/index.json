@@ -2275,6 +2275,8 @@
   "global_error.too_many_requests": "Too many requests",
   "pref.invoices.termsConditions.field": "Terms & Conditions",
   "pref.invoices.customerNotes.field": "Customer Notes",
+  "pref.invoices.mailBcc.field": "Invoice Email BCC",
+  "pref.invoices.mailBccEnabled.label": "Automatically BCC this address on every invoice email",
   "pref.creditNotes.termsConditions.field": "Terms & Conditions",
   "pref.creditNotes.customerNotes.field": "Customer Notes",
   "pref.estimates.termsConditions.field": "Terms & Conditions",

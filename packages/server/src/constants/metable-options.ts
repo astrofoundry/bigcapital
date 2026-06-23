@@ -125,6 +125,12 @@ export const SettingsOptions = {
     terms_conditions: {
       type: 'string',
     },
+    mail_bcc: {
+      type: 'string',
+    },
+    mail_bcc_enabled: {
+      type: 'boolean',
+    },
   },
   payment_receives: {
     next_number: {

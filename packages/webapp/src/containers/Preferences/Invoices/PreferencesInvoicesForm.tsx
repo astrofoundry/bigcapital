@@ -4,7 +4,13 @@ import { Form } from 'formik';
 import { Button, Intent } from '@blueprintjs/core';
 import { useHistory } from 'react-router-dom';
 
-import { FormattedMessage as T, FFormGroup, FTextArea } from '@/components';
+import {
+  FormattedMessage as T,
+  FFormGroup,
+  FTextArea,
+  FInputGroup,
+  FCheckbox,
+} from '@/components';
 
 /**
  * Invoices preferences form.
@@ -44,6 +50,25 @@ export function PreferencesInvoicesForm({ isSubmitting }) {
           name={'termsConditions'}
           fastField={true}
           fill={true}
+        />
+      </FFormGroup>
+
+      {/* ---------- Mail BCC ----------  */}
+      <FFormGroup
+        name={'mailBccEnabled'}
+        label={<T id={'pref.invoices.mailBcc.field'} />}
+      >
+        <FCheckbox
+          name={'mailBccEnabled'}
+          label={<T id={'pref.invoices.mailBccEnabled.label'} />}
+        />
+      </FFormGroup>
+
+      <FFormGroup name={'mailBcc'} fastField={true}>
+        <FInputGroup
+          name={'mailBcc'}
+          fastField={true}
+          placeholder={'bcc@example.com'}
         />
       </FFormGroup>
 
