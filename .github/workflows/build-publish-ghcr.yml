@@ -2,7 +2,7 @@ name: Build and publish images (GHCR)
 
 # Builds the fork's images and pushes them to GitHub Container Registry
 # (ghcr.io/astrofoundry/bigcapital-<service>) on every code change to the
-# astrofoundry branch. These images are consumed by the CORTEX GitOps stack.
+# astrofoundry branch. These images are consumed by the pulsar GitOps stack.
 #
 # The migration image is built FROM this run's fork server image (not upstream
 # bigcapitalhq/server:latest), so the migration set always matches the app.
@@ -39,11 +39,8 @@ jobs:
   images:
     name: build ${{ matrix.service }}
     needs: setup
-    # Target is the Apple M4 (arm64) Mac mini, so images are arm64.
-    # ubuntu-24.04-arm is a native arm64 GitHub-hosted runner (free for public repos).
-    # If arm64 runners become unavailable, switch to ubuntu-latest and add a
-    # "docker/setup-qemu-action@v3" step before buildx (slower, emulated).
-    runs-on: ubuntu-24.04-arm
+    # Target is the pulsar arcane VM (amd64), so images are amd64.
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -95,7 +92,7 @@ jobs:
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.file }}
-          platforms: linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -103,7 +100,7 @@ jobs:
   migration:
     name: build migration
     needs: [setup, images]
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -136,7 +133,7 @@ jobs:
         with:
           context: "."
           file: docker/migration/Dockerfile
-          platforms: linux/arm64
+          platforms: linux/amd64
           push: true
           build-args: |
             SERVER_IMAGE=${{ env.REGISTRY }}/${{ env.OWNER }}/bigcapital-server:${{ needs.setup.outputs.sha7 }}
