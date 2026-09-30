@@ -1,13 +1,17 @@
 import { lowerCase } from 'lodash';
 import { UncategorizedBankTransaction } from '../BankingTransactions/models/UncategorizedBankTransaction';
-import { BankRuleApplyIfTransactionType, BankRuleConditionComparator, BankRuleConditionType, IBankRuleCondition } from '../BankRules/types';
+import {
+  BankRuleApplyIfTransactionType,
+  BankRuleConditionComparator,
+  BankRuleConditionType,
+} from '../BankRules/types';
 import { BankRule } from '../BankRules/models/BankRule';
 import { BankRuleCondition } from '../BankRules/models/BankRuleCondition';
 
 const conditionsMatch = (
   transaction: UncategorizedBankTransaction,
   conditions: BankRuleCondition[],
-  conditionsType: BankRuleConditionType = BankRuleConditionType.And
+  conditionsType: BankRuleConditionType = BankRuleConditionType.And,
 ) => {
   const method =
     conditionsType === BankRuleConditionType.And ? 'every' : 'some';
@@ -26,7 +30,7 @@ const conditionsMatch = (
 
 const matchNumberCondition = (
   transaction: UncategorizedBankTransaction,
-  condition: BankRuleCondition
+  condition: BankRuleCondition,
 ) => {
   const conditionValue = parseFloat(condition.value);
   const transactionAmount =
@@ -58,7 +62,7 @@ const matchNumberCondition = (
 
 const matchTextCondition = (
   transaction: UncategorizedBankTransaction,
-  condition: BankRuleCondition
+  condition: BankRuleCondition,
 ): boolean => {
   const transactionValue = transaction[condition.field] as string;
 
@@ -80,7 +84,7 @@ const matchTextCondition = (
 
 const matchTransactionType = (
   bankRule: BankRule,
-  transaction: UncategorizedBankTransaction
+  transaction: UncategorizedBankTransaction,
 ): boolean => {
   return (
     (transaction.isDepositTransaction &&
@@ -94,7 +98,7 @@ const matchTransactionType = (
 
 export const bankRulesMatchTransaction = (
   transaction: UncategorizedBankTransaction,
-  bankRules: BankRule[]
+  bankRules: BankRule[],
 ) => {
   return bankRules.find((rule) => {
     return (

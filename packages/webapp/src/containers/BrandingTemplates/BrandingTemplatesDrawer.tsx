@@ -1,11 +1,13 @@
 // @ts-nocheck
+import * as FF from 'fp-ts/function';
 import React from 'react';
-import * as R from 'ramda';
 import { Drawer, DrawerSuspense } from '@/components';
 import { withDrawers } from '@/containers/Drawer/withDrawers';
 
-const BrandingTemplatesContent = React.lazy(
-  () => import('./BrandingTemplatesContent'),
+const BrandingTemplatesContent = React.lazy(() =>
+  import('./BrandingTemplatesContent').then((m) => ({
+    default: m.BrandingTemplateContent,
+  })),
 );
 
 /**
@@ -19,11 +21,7 @@ function BrandingTemplatesDrawerRoot({
   payload,
 }) {
   return (
-    <Drawer
-      isOpen={isOpen}
-      name={name}
-      payload={payload}
-    >
+    <Drawer isOpen={isOpen} name={name} payload={payload}>
       <DrawerSuspense>
         <BrandingTemplatesContent />
       </DrawerSuspense>
@@ -31,6 +29,7 @@ function BrandingTemplatesDrawerRoot({
   );
 }
 
-export const BrandingTemplatesDrawer = R.compose(withDrawers())(
+export const BrandingTemplatesDrawer = FF.pipe(
   BrandingTemplatesDrawerRoot,
+  withDrawers(),
 );

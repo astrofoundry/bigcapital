@@ -1,4 +1,3 @@
-// @ts-nocheck
 export enum DialogsName {
   AccountForm = 'account-form',
   CurrencyForm = 'currency-form',
@@ -39,13 +38,6 @@ export enum DialogsName {
   WarehouseActivateForm = 'warehouse-activate',
   CustomerOpeningBalanceForm = 'customer-opening-balance',
   VendorOpeningBalanceForm = 'vendor-opening-balance',
-  ProjectForm = 'project-form',
-  ProjectTaskForm = 'project-task-form',
-  ProjectTimeEntryForm = 'project-time-entry-form',
-  ProjectExpenseForm = 'project-expense-form',
-  EstimateExpenseForm = 'estimate-expense-form',
-  ProjectInvoicingForm = 'project-invoicing-form',
-  ProjectBillableEntriesForm = 'project-billable-entries',
   InvoiceNumberSettings = 'InvoiceNumberSettings',
   TaxRateForm = 'tax-rate-form',
   InvoiceExchangeRateChangeNotice = 'InvoiceExchangeRateChangeNotice',
@@ -54,12 +46,14 @@ export enum DialogsName {
   ReceiptBulkDelete = 'receipts-bulk-delete',
   CreditNoteBulkDelete = 'credit-notes-bulk-delete',
   PaymentReceivedBulkDelete = 'payments-received-bulk-delete',
+  PaymentMadeBulkDelete = 'payments-made-bulk-delete',
   BillBulkDelete = 'bills-bulk-delete',
   VendorCreditBulkDelete = 'vendor-credits-bulk-delete',
   ManualJournalBulkDelete = 'manual-journals-bulk-delete',
   ExpenseBulkDelete = 'expenses-bulk-delete',
   AccountBulkDelete = 'accounts-bulk-delete',
   ItemBulkDelete = 'items-bulk-delete',
+  ItemCategoryBulkDelete = 'item-categories-bulk-delete',
   CustomerBulkDelete = 'customers-bulk-delete',
   VendorBulkDelete = 'vendors-bulk-delete',
   InvoiceMail = 'invoice-mail',
@@ -92,7 +86,8 @@ export enum DialogsName {
   DisconnectBankAccountConfirmation = 'DisconnectBankAccountConfirmation',
   SharePaymentLink = 'SharePaymentLink',
   SelectPaymentMethod = 'SelectPaymentMethodsDialog',
-
   StripeSetup = 'StripeSetup',
-  ApiKeysGenerate = 'api-keys-generate'
+  ApiKeysGenerate = 'api-keys-generate',
+  WorkspaceDelete = 'workspace-delete',
+  WorkspaceInactivate = 'workspace-inactivate',
 }

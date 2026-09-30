@@ -1,19 +1,26 @@
-import * as R from 'ramda';
+import { constant, flow } from 'fp-ts/function';
+import { isEmpty } from 'lodash';
+import { when } from '@/common/fp';
 import { ROW_TYPE } from './_types';
 import {
   IPurchasesByItemsItem,
   IPurchasesByItemsSheetData,
   IPurchasesByItemsTotal,
 } from './types/PurchasesByItems.types';
-import { ITableColumn, ITableColumnAccessor, ITableRow } from '../../types/Table.types';
+import {
+  ITableColumn,
+  ITableColumnAccessor,
+  ITableRow,
+} from '../../types/Table.types';
 import { FinancialTable } from '../../common/FinancialTable';
 import { FinancialSheetStructure } from '../../common/FinancialSheetStructure';
 import { FinancialSheet } from '../../common/FinancialSheet';
 import { tableRowMapper } from '../../utils/Table.utils';
+import { PURCHASES_BY_ITEMS_COLUMN_KEYS } from '../../common/constants/tableColumnKeys';
 
-export class PurchasesByItemsTable extends R.compose(
+export class PurchasesByItemsTable extends flow(
+  FinancialSheetStructure,
   FinancialTable,
-  FinancialSheetStructure
 )(FinancialSheet) {
   private data: IPurchasesByItemsSheetData;
 
@@ -32,10 +39,19 @@ export class PurchasesByItemsTable extends R.compose(
    */
   private commonTableAccessors(): ITableColumnAccessor[] {
     return [
-      { key: 'item_name', accessor: 'name' },
-      { key: 'quantity_purchases', accessor: 'quantityPurchasedFormatted' },
-      { key: 'purchase_amount', accessor: 'purchaseCostFormatted' },
-      { key: 'average_cost', accessor: 'averageCostPriceFormatted' },
+      { key: PURCHASES_BY_ITEMS_COLUMN_KEYS.ITEM_NAME, accessor: 'name' },
+      {
+        key: PURCHASES_BY_ITEMS_COLUMN_KEYS.QUANTITY_PURCHASES,
+        accessor: 'quantityPurchasedFormatted',
+      },
+      {
+        key: PURCHASES_BY_ITEMS_COLUMN_KEYS.PURCHASE_AMOUNT,
+        accessor: 'purchaseCostFormatted',
+      },
+      {
+        key: PURCHASES_BY_ITEMS_COLUMN_KEYS.AVERAGE_COST,
+        accessor: 'averageCostPriceFormatted',
+      },
     ];
   }
 
@@ -45,10 +61,19 @@ export class PurchasesByItemsTable extends R.compose(
    */
   private commonTableColumns(): ITableColumn[] {
     return [
-      { label: 'Item name', key: 'item_name' },
-      { label: 'Quantity Purchased', key: 'quantity_purchases' },
-      { label: 'Purchase Amount', key: 'purchase_amount' },
-      { label: 'Average Price', key: 'average_cost' },
+      { label: 'Item name', key: PURCHASES_BY_ITEMS_COLUMN_KEYS.ITEM_NAME },
+      {
+        label: 'Quantity Purchased',
+        key: PURCHASES_BY_ITEMS_COLUMN_KEYS.QUANTITY_PURCHASES,
+      },
+      {
+        label: 'Purchase Amount',
+        key: PURCHASES_BY_ITEMS_COLUMN_KEYS.PURCHASE_AMOUNT,
+      },
+      {
+        label: 'Average Price',
+        key: PURCHASES_BY_ITEMS_COLUMN_KEYS.AVERAGE_COST,
+      },
     ];
   }
 
@@ -71,7 +96,7 @@ export class PurchasesByItemsTable extends R.compose(
    * @returns {ITableRow[]}
    */
   private itemsMap = (items: IPurchasesByItemsItem[]): ITableRow[] => {
-    return R.map(this.itemMap)(items);
+    return items.map(this.itemMap);
   };
 
   /**
@@ -93,7 +118,7 @@ export class PurchasesByItemsTable extends R.compose(
    */
   public tableColumns(): ITableColumn[] {
     const columns = this.commonTableColumns();
-    return R.compose(this.tableColumnsCellIndexing)(columns);
+    return this.tableColumnsCellIndexing(columns);
   }
 
   /**
@@ -104,8 +129,9 @@ export class PurchasesByItemsTable extends R.compose(
     const itemsRows = this.itemsMap(this.data.items);
     const totalRow = this.totalNodeMap(this.data.total);
 
-    return R.compose(
-      R.when(R.always(R.not(R.isEmpty(itemsRows))), R.append(totalRow))
-    )(itemsRows) as ITableRow[];
+    return when(constant(!isEmpty(itemsRows)), (rows: ITableRow[]) => [
+      ...rows,
+      totalRow,
+    ])(itemsRows);
   }
 }

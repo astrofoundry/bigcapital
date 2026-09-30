@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as Yup from 'yup';
 
 const Schema = Yup.object().shape({
@@ -9,8 +8,8 @@ const Schema = Yup.object().shape({
     .email()
     .when('mailBccEnabled', {
       is: true,
-      then: (schema) => schema.required(),
-      otherwise: (schema) => schema.optional(),
+      then: (schema: Yup.StringSchema) => schema.required(),
+      otherwise: (schema: Yup.StringSchema) => schema.optional(),
     }),
 });
 

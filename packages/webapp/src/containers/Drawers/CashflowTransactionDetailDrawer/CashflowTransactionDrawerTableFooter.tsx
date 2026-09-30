@@ -3,9 +3,9 @@ import React from 'react';
 import { useCashflowTransactionDrawerContext } from './CashflowTransactionDrawerProvider';
 import { T, FormatNumber } from '@/components';
 
-export default function CashflowTransactionDrawerTableFooter() {
+export function CashflowTransactionDrawerTableFooter() {
   const {
-    cashflowTransaction: { formatted_amount },
+    cashflowTransaction: { formattedAmount },
   } = useCashflowTransactionDrawerContext();
 
   return (
@@ -16,18 +16,18 @@ export default function CashflowTransactionDrawerTableFooter() {
             <T id={'manual_journal.details.subtotal'} />
           </div>
           <div class="debit">
-            <FormatNumber value={formatted_amount} />
+            <FormatNumber value={formattedAmount} />
           </div>
           <div class="credit">
-            <FormatNumber value={formatted_amount} />
+            <FormatNumber value={formattedAmount} />
           </div>
         </div>
         <div class="total-lines__line total-lines__line--total">
           <div class="title">
             <T id={'manual_journal.details.total'} />
           </div>
-          <div class="debit">{formatted_amount}</div>
-          <div class="credit">{formatted_amount}</div>
+          <div class="debit">{formattedAmount}</div>
+          <div class="credit">{formattedAmount}</div>
         </div>
       </div>
     </div>

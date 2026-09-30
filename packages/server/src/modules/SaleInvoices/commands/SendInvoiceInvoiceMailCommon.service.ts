@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { GetSaleInvoice } from '../queries/GetSaleInvoice.service';
 import {
   DEFAULT_INVOICE_MAIL_CONTENT,
@@ -114,7 +113,6 @@ export class SendSaleInvoiceMailCommon {
    * @param {string} text - The given text.
    * @returns {Promise<string>}
    */
-  // @ts-nocheck
   public getInvoiceFormatterArgs = async (
     invoiceId: number,
   ): Promise<Record<string, string | number>> => {

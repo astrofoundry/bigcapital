@@ -1,13 +1,48 @@
-// @ts-nocheck
-import * as R from 'ramda';
+import * as FA from 'fp-ts/Array';
+import * as FF from 'fp-ts/function';
+import * as FO from 'fp-ts/Option';
 import { isEmpty } from 'lodash';
-
+import type { BalanceSheetColumnKey } from '@bigcapital/sdk-ts';
 import { Align } from '@/constants';
 import { getColumnWidth } from '@/utils';
+import { firstMatch, when } from '@/utils/fp';
 
-const getTableCellValueAccessor = (index) => `cells[${index}].value`;
+type AlignValue = (typeof Align)[keyof typeof Align];
 
-const getReportColWidth = (data, accessor, headerText) => {
+interface ReportTableColumn {
+  key: string;
+  label: string;
+  cellIndex?: number;
+  children?: ReportTableColumn[];
+}
+
+interface TableColumn {
+  key: string;
+  Header: string;
+  accessor?: string;
+  className?: string;
+  textOverview?: boolean;
+  width?: number;
+  sticky?: AlignValue;
+  align?: AlignValue;
+  disableSortBy?: boolean;
+  money?: boolean;
+  columns?: TableColumn[];
+}
+
+type ColumnMapper = (
+  data: unknown[],
+) => (column: ReportTableColumn) => TableColumn;
+
+type ColumnMatcher = (column: ReportTableColumn) => FO.Option<TableColumn>;
+
+const getTableCellValueAccessor = (index?: number) => `cells[${index}].value`;
+
+const getReportColWidth = (
+  data: unknown[],
+  accessor: string,
+  headerText?: string,
+): number => {
   return getColumnWidth(
     data,
     accessor,
@@ -19,8 +54,8 @@ const getReportColWidth = (data, accessor, headerText) => {
 /**
  * Account name column mapper.
  */
-const accountNameMapper = R.curry((data, column) => {
-  const accessor = getTableCellValueAccessor(column.cell_index);
+const accountNameMapper: ColumnMapper = (data) => (column) => {
+  const accessor = getTableCellValueAccessor(column.cellIndex);
   const width = getReportColWidth(data, accessor, column.label);
 
   return {
@@ -32,73 +67,87 @@ const accountNameMapper = R.curry((data, column) => {
     width: Math.max(width, 300),
     sticky: Align.Left,
   };
-});
+};
 
 /**
- * Assoc columns to total column.
+ * Shared money column mapper.
  */
-const assocColumnsToTotalColumn = R.curry((data, column, columnAccessor) => {
-  const columns = totalColumnsComposer(data, column);
-
-  return R.assoc('columns', columns, columnAccessor);
-});
-
-/**
- * Detarmines whether the given column has children columns.
- * @returns {boolean}
- */
-const isColumnHasColumns = (column) => !isEmpty(column.children);
-
-/**
- *
- * @param {*} data
- * @param {*} column
- * @returns
- */
-const dateRangeSoloColumnAttrs = (data, column) => {
-  const accessor = getTableCellValueAccessor(column.cell_index);
+const moneyColumnMapper: ColumnMapper = (data) => (column) => {
+  const accessor = getTableCellValueAccessor(column.cellIndex);
+  const width = getReportColWidth(data, accessor, column.label);
 
   return {
+    Header: column.label,
+    key: column.key,
     accessor,
-    width: getReportColWidth(data, accessor),
+    width,
+    align: Align.Right,
+    disableSortBy: true,
+    textOverview: true,
+    money: true,
   };
 };
 
 /**
- * Date range columns mapper.
+ * Determines whether the given column matches the given key.
  */
-const dateRangeMapper = R.curry((data, column) => {
-  const isDateColumnHasColumns = isColumnHasColumns(column);
+const isColumnKey =
+  (key: BalanceSheetColumnKey): FF.Predicate<ReportTableColumn> =>
+  (column) =>
+    column.key === key;
 
-  const columnAccessor = {
-    Header: column.label,
-    key: column.key,
-    disableSortBy: true,
-    textOverview: true,
-    money: true,
-    align: isDateColumnHasColumns ? Align.Center : Align.Right,
+/**
+ * Determines whether the given string starts with `date-range`.
+ */
+const isMatchesDateRange = (key: string): boolean => /^date-range/.test(key);
+
+const isDateRangeColumn: FF.Predicate<ReportTableColumn> = (column) =>
+  isMatchesDateRange(column.key);
+
+/**
+ * Total sub-columns composer.
+ */
+const totalColumnsComposer = (
+  data: unknown[],
+  column: ReportTableColumn,
+): TableColumn[] => {
+  return FF.pipe(column.children ?? [], FA.map(totalColumnsMapper(data)));
+};
+
+/**
+ * Assoc columns to total column.
+ */
+const assocColumnsToTotal =
+  (data: unknown[], column: ReportTableColumn) =>
+  (columnAccessor: TableColumn): TableColumn => ({
+    ...columnAccessor,
+    columns: totalColumnsComposer(data, column),
+  });
+
+/**
+ * Assoc the solo date-range column attributes.
+ */
+const assocDateRangeSoloAttrs =
+  (data: unknown[], column: ReportTableColumn) =>
+  (columnAccessor: TableColumn): TableColumn => {
+    const accessor = getTableCellValueAccessor(column.cellIndex);
+
+    return {
+      ...columnAccessor,
+      accessor,
+      width: getReportColWidth(data, accessor),
+    };
   };
-  return R.compose(
-    R.when(
-      R.always(isDateColumnHasColumns),
-      assocColumnsToTotalColumn(data, column),
-    ),
-    R.when(
-      R.always(!isDateColumnHasColumns),
-      R.mergeLeft(dateRangeSoloColumnAttrs(data, column)),
-    ),
-  )(columnAccessor);
-});
 
 /**
  * Total column mapper.
  */
-const totalMapper = R.curry((data, column) => {
+const totalMapper: ColumnMapper = (data) => (column) => {
   const hasChildren = !isEmpty(column.children);
-  const accessor = getTableCellValueAccessor(column.cell_index);
+  const accessor = getTableCellValueAccessor(column.cellIndex);
   const width = getReportColWidth(data, accessor, column.label);
 
-  const columnAccessor = {
+  const base: TableColumn = {
     key: column.key,
     Header: column.label,
     accessor,
@@ -108,234 +157,102 @@ const totalMapper = R.curry((data, column) => {
     money: true,
     align: hasChildren ? Align.Center : Align.Right,
   };
-  return R.compose(
-    R.when(R.always(hasChildren), assocColumnsToTotalColumn(data, column)),
-  )(columnAccessor);
-});
+
+  return FF.pipe(
+    base,
+    FO.fromPredicate(FF.constant(hasChildren)),
+    FO.map(assocColumnsToTotal(data, column)),
+    FO.match(() => base, FF.identity),
+  );
+};
 
 /**
- * `Percentage of column` column accessor.
+ * Date range columns mapper.
  */
-const percentageOfColumnAccessor = R.curry((data, column) => {
-  const accessor = getTableCellValueAccessor(column.cell_index);
-  const width = getReportColWidth(data, accessor, column.label);
+const dateRangeMapper: ColumnMapper = (data) => (column) => {
+  const hasChildren = !isEmpty(column.children);
 
-  return {
+  const base: TableColumn = {
     Header: column.label,
     key: column.key,
-    accessor,
-    width,
-    align: Align.Right,
     disableSortBy: true,
     textOverview: true,
     money: true,
+    align: hasChildren ? Align.Center : Align.Right,
   };
-});
 
-/**
- * `Percentage of row` column accessor.
- */
-const percentageOfRowAccessor = R.curry((data, column) => {
-  const accessor = getTableCellValueAccessor(column.cell_index);
-  const width = getReportColWidth(data, accessor, column.label);
-
-  return {
-    Header: column.label,
-    key: column.key,
-    accessor,
-    width,
-    align: Align.Right,
-    disableSortBy: true,
-    textOverview: true,
-    money: true,
-  };
-});
-
-/**
- * Previous year column accessor.
- */
-const previousYearAccessor = R.curry((data, column) => {
-  const accessor = getTableCellValueAccessor(column.cell_index);
-  const width = getReportColWidth(data, accessor, column.label);
-
-  return {
-    Header: column.label,
-    key: column.key,
-    accessor,
-    width,
-    align: Align.Right,
-    disableSortBy: true,
-    textOverview: true,
-    money: true,
-  };
-});
-
-/**
- * Pervious year change column accessor.
- */
-const previousYearChangeAccessor = R.curry((data, column) => {
-  const accessor = getTableCellValueAccessor(column.cell_index);
-  const width = getReportColWidth(data, accessor, column.label);
-
-  return {
-    Header: column.label,
-    key: column.key,
-    accessor,
-    width,
-    align: Align.Right,
-    disableSortBy: true,
-    textOverview: true,
-    money: true,
-  };
-});
-
-/**
- * Previous year percentage column accessor.
- */
-const previousYearPercentageAccessor = R.curry((data, column) => {
-  const accessor = getTableCellValueAccessor(column.cell_index);
-  const width = getReportColWidth(data, accessor, column.label);
-
-  return {
-    Header: column.label,
-    key: column.key,
-    accessor,
-    width,
-    align: Align.Right,
-    disableSortBy: true,
-    textOverview: true,
-    money: true,
-  };
-});
-
-/**
- * Previous period column accessor.
- */
-const previousPeriodAccessor = R.curry((data, column) => {
-  const accessor = getTableCellValueAccessor(column.cell_index);
-  const width = getReportColWidth(data, accessor, column.label);
-
-  return {
-    Header: column.label,
-    key: column.key,
-    accessor,
-    width,
-    align: Align.Right,
-    disableSortBy: true,
-    textOverview: true,
-    money: true,
-  };
-});
-
-/**
- * Previous period change column accessor.
- */
-const previousPeriodChangeAccessor = R.curry((data, column) => {
-  const accessor = getTableCellValueAccessor(column.cell_index);
-  const width = getReportColWidth(data, accessor, column.label);
-
-  return {
-    Header: column.label,
-    key: column.key,
-    accessor,
-    width,
-    align: Align.Right,
-    disableSortBy: true,
-    textOverview: true,
-    money: true,
-  };
-});
-
-/**
- * Previous period percentage column accessor.
- */
-const previousPeriodPercentageAccessor = R.curry((data, column) => {
-  const accessor = getTableCellValueAccessor(column.cell_index);
-  const width = getReportColWidth(data, accessor, column.label);
-
-  return {
-    Header: column.label,
-    key: column.key,
-    accessor,
-    width,
-    align: Align.Right,
-    disableSortBy: true,
-    textOverview: true,
-    money: true,
-  };
-});
-
-/**
- *
- * @param {*} column
- * @param {*} index
- * @returns
- */
-const totalColumnsMapper = R.curry((data, column) => {
-  return R.compose(
-    R.when(R.pathEq(['key'], 'total'), totalMapper(data)),
-    // Percetage of column/row.
-    R.when(
-      R.pathEq(['key'], 'percentage_of_column'),
-      percentageOfColumnAccessor(data),
+  return FF.pipe(
+    base,
+    FO.fromPredicate(FF.constant(hasChildren)),
+    FO.map(assocColumnsToTotal(data, column)),
+    FO.alt(() =>
+      FF.pipe(
+        base,
+        FO.fromPredicate(FF.constant(!hasChildren)),
+        FO.map(assocDateRangeSoloAttrs(data, column)),
+      ),
     ),
-    R.when(
-      R.pathEq(['key'], 'percentage_of_row'),
-      percentageOfRowAccessor(data),
-    ),
-    // Previous year.
-    R.when(R.pathEq(['key'], 'previous_year'), previousYearAccessor(data)),
-    R.when(
-      R.pathEq(['key'], 'previous_year_change'),
-      previousYearChangeAccessor(data),
-    ),
-    R.when(
-      R.pathEq(['key'], 'previous_year_percentage'),
-      previousYearPercentageAccessor(data),
-    ),
-    // Pervious period.
-    R.when(R.pathEq(['key'], 'previous_period'), previousPeriodAccessor(data)),
-    R.when(
-      R.pathEq(['key'], 'previous_period_change'),
-      previousPeriodChangeAccessor(data),
-    ),
-    R.when(
-      R.pathEq(['key'], 'previous_period_percentage'),
-      previousPeriodPercentageAccessor(data),
-    ),
-  )(column);
+    FO.match(() => base, FF.identity),
+  );
+};
+
+/**
+ * Fallback column mapper for keys matching no conditional mapper.
+ */
+const fallbackColumnMapper = (column: ReportTableColumn): TableColumn => ({
+  key: column.key,
+  Header: column.label,
+  accessor: getTableCellValueAccessor(column.cellIndex),
 });
 
 /**
- * Total sub-columns composer.
+ * Total sub-columns conditional mappers.
  */
-const totalColumnsComposer = R.curry((data, column) => {
-  return R.map(totalColumnsMapper(data), column.children);
-});
+const totalColumnMatchers = (data: unknown[]): ColumnMatcher[] => [
+  when(isColumnKey('total'), totalMapper(data)),
+  // Percentage of column/row.
+  when(isColumnKey('percentage_of_column'), moneyColumnMapper(data)),
+  when(isColumnKey('percentage_of_row'), moneyColumnMapper(data)),
+  // Previous year.
+  when(isColumnKey('previous_year'), moneyColumnMapper(data)),
+  when(isColumnKey('previous_year_change'), moneyColumnMapper(data)),
+  when(isColumnKey('previous_year_percentage'), moneyColumnMapper(data)),
+  // Previous period.
+  when(isColumnKey('previous_period'), moneyColumnMapper(data)),
+  when(isColumnKey('previous_period_change'), moneyColumnMapper(data)),
+  when(isColumnKey('previous_period_percentage'), moneyColumnMapper(data)),
+];
+
+const totalColumnsMapper =
+  (data: unknown[]) =>
+  (column: ReportTableColumn): TableColumn =>
+    FF.pipe(
+      column,
+      firstMatch(totalColumnMatchers(data)),
+      FO.match(() => fallbackColumnMapper(column), FF.identity),
+    );
 
 /**
- * Detarmines the given string starts with `date-range` string.
+ * Dynamic column conditional mappers.
  */
-const isMatchesDateRange = (r) => R.match(/^date-range/g, r).length > 0;
+const dynamicColumnMatchers = (data: unknown[]): ColumnMatcher[] => [
+  when(isDateRangeColumn, dateRangeMapper(data)),
+  when(isColumnKey('name'), accountNameMapper(data)),
+  when(isColumnKey('total'), totalMapper(data)),
+];
 
-/**
- * Dynamic column mapper.
- */
-const dynamicColumnMapper = R.curry((data, column) => {
-  const indexTotalMapper = totalMapper(data);
-  const indexAccountNameMapper = accountNameMapper(data);
-  const indexDatePeriodMapper = dateRangeMapper(data);
+const dynamicColumnMapper =
+  (data: unknown[]) =>
+  (column: ReportTableColumn): TableColumn =>
+    FF.pipe(
+      column,
+      firstMatch(dynamicColumnMatchers(data)),
+      FO.match(() => fallbackColumnMapper(column), FF.identity),
+    );
 
-  return R.compose(
-    R.when(R.pathSatisfies(isMatchesDateRange, ['key']), indexDatePeriodMapper),
-    R.when(R.pathEq(['key'], 'name'), indexAccountNameMapper),
-    R.when(R.pathEq(['key'], 'total'), indexTotalMapper),
-  )(column);
-});
-
-/**
- * Cash flow dynamic columns.
- */
-export const dynamicColumns = (columns, data) => {
-  return R.map(dynamicColumnMapper(data), columns);
+export const dynamicColumns = (
+  columns: ReportTableColumn[],
+  data: unknown[],
+): TableColumn[] => {
+  return FF.pipe(columns, FA.map(dynamicColumnMapper(data)));
 };

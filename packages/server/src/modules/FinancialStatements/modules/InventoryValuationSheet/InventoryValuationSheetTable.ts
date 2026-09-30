@@ -1,4 +1,6 @@
-import * as R from 'ramda';
+import { constant, flow } from 'fp-ts/function';
+import { isEmpty } from 'lodash';
+import { when } from '@/common/fp';
 import {
   IInventoryValuationItem,
   IInventoryValuationSheetData,
@@ -14,8 +16,9 @@ import {
   ITableRow,
 } from '../../types/Table.types';
 import { tableRowMapper } from '../../utils/Table.utils';
+import { INVENTORY_VALUATION_COLUMN_KEYS } from '../../common/constants/tableColumnKeys';
 
-export class InventoryValuationSheetTable extends R.pipe(
+export class InventoryValuationSheetTable extends flow(
   FinancialTable,
   FinancialSheetStructure,
 )(FinancialSheet) {
@@ -36,10 +39,19 @@ export class InventoryValuationSheetTable extends R.pipe(
    */
   private commonColumnsAccessors(): ITableColumnAccessor[] {
     return [
-      { key: 'item_name', accessor: 'name' },
-      { key: 'quantity', accessor: 'quantityFormatted' },
-      { key: 'valuation', accessor: 'valuationFormatted' },
-      { key: 'average', accessor: 'averageFormatted' },
+      { key: INVENTORY_VALUATION_COLUMN_KEYS.ITEM_NAME, accessor: 'name' },
+      {
+        key: INVENTORY_VALUATION_COLUMN_KEYS.QUANTITY,
+        accessor: 'quantityFormatted',
+      },
+      {
+        key: INVENTORY_VALUATION_COLUMN_KEYS.VALUATION,
+        accessor: 'valuationFormatted',
+      },
+      {
+        key: INVENTORY_VALUATION_COLUMN_KEYS.AVERAGE,
+        accessor: 'averageFormatted',
+      },
     ];
   }
 
@@ -75,7 +87,7 @@ export class InventoryValuationSheetTable extends R.pipe(
    * @returns {ITableRow[]}
    */
   private itemsRowsMapper = (items: IInventoryValuationItem[]): ITableRow[] => {
-    return R.map(this.itemRowMapper)(items);
+    return items.map(this.itemRowMapper);
   };
 
   /**
@@ -86,9 +98,10 @@ export class InventoryValuationSheetTable extends R.pipe(
     const itemsRows = this.itemsRowsMapper(this.data.items);
     const totalRow = this.totalRowMapper(this.data.total);
 
-    return R.compose(
-      R.when(R.always(R.not(R.isEmpty(itemsRows))), R.append(totalRow)),
-    )([...itemsRows]) as ITableRow[];
+    return when(constant(!isEmpty(itemsRows)), (rows: ITableRow[]) => [
+      ...rows,
+      totalRow,
+    ])([...itemsRows]);
   }
 
   /**
@@ -97,11 +110,11 @@ export class InventoryValuationSheetTable extends R.pipe(
    */
   public tableColumns(): ITableColumn[] {
     const columns = [
-      { key: 'item_name', label: 'Item Name' },
-      { key: 'quantity', label: 'Quantity' },
-      { key: 'valuation', label: 'Valuation' },
-      { key: 'average', label: 'Average' },
+      { key: INVENTORY_VALUATION_COLUMN_KEYS.ITEM_NAME, label: 'Item Name' },
+      { key: INVENTORY_VALUATION_COLUMN_KEYS.QUANTITY, label: 'Quantity' },
+      { key: INVENTORY_VALUATION_COLUMN_KEYS.VALUATION, label: 'Valuation' },
+      { key: INVENTORY_VALUATION_COLUMN_KEYS.AVERAGE, label: 'Average' },
     ];
-    return R.compose(this.tableColumnsCellIndexing)(columns);
+    return this.tableColumnsCellIndexing(columns);
   }
 }

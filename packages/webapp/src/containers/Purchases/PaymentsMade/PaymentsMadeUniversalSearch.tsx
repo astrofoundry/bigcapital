@@ -1,14 +1,13 @@
 // @ts-nocheck
+import { MenuItem } from '@blueprintjs/core';
 import React from 'react';
 import intl from 'react-intl-universal';
-import { MenuItem } from '@blueprintjs/core';
-
 import { Icon } from '@/components';
-import { RESOURCES_TYPES } from '@/constants/resourcesTypes';
-import { highlightText } from '@/utils';
 import { AbilitySubject, PaymentMadeAction } from '@/constants/abilityOption';
 import { DRAWERS } from '@/constants/drawers';
+import { RESOURCES_TYPES } from '@/constants/resourcesTypes';
 import { withDrawerActions } from '@/containers/Drawer/withDrawerActions';
+import { highlightText } from '@/utils';
 
 /**
  * Universal search bill item select action.
@@ -46,13 +45,13 @@ export function PaymentsMadeUniversalSearchItem(
           <div>{highlightText(text, query)}</div>
 
           <span class="bp4-text-muted">
-            {reference.payment_number && (
+            {reference.paymentNumber && (
               <>
-                {highlightText(reference.payment_number, query)}
+                {highlightText(reference.paymentNumber, query)}
                 <Icon icon={'caret-right-16'} iconSize={16} />
               </>
             )}
-            {highlightText(reference.formatted_payment_date, query)}
+            {highlightText(reference.formattedPaymentDate, query)}
           </span>
         </div>
       }
@@ -68,8 +67,8 @@ export function PaymentsMadeUniversalSearchItem(
  */
 const paymentMadeToSearch = (payment) => ({
   id: payment.id,
-  text: payment.vendor.display_name,
-  label: payment.formatted_amount,
+  text: payment.vendor?.displayName ?? '',
+  label: payment.formattedAmount ?? '',
   reference: payment,
 });
 

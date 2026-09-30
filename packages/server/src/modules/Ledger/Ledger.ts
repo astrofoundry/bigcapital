@@ -3,7 +3,6 @@ import { defaultTo, sumBy, uniqBy } from 'lodash';
 import { ILedger } from './types/Ledger.types';
 import { ILedgerEntry } from './types/Ledger.types';
 import { AccountTransaction } from '../Accounts/models/AccountTransaction.model';
-import { IAccountTransaction } from '@/interfaces/Account';
 import { ModelObject } from 'objection';
 
 export class Ledger implements ILedger {
@@ -229,7 +228,9 @@ export class Ledger implements ILedger {
    * @param   {IAccountTransaction[]} entries
    * @returns {ILedgerEntry[]}
    */
-  static mappingTransactions(entries: ModelObject<AccountTransaction>[]): ILedgerEntry[] {
+  static mappingTransactions(
+    entries: ModelObject<AccountTransaction>[],
+  ): ILedgerEntry[] {
     return entries.map(this.mapTransaction);
   }
 

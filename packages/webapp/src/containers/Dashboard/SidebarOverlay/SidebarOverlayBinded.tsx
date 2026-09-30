@@ -1,12 +1,10 @@
 // @ts-nocheck
+import * as FF from 'fp-ts/function';
 import React from 'react';
-import * as R from 'ramda';
-
-import { SidebarOverlay } from './SidebarOverlay';
-import { withDashboardSidebarActions } from '@/containers/Dashboard/Sidebar/withDashboardSidebarActions';
-import { withDashboardSidebar } from '@/containers/Dashboard/Sidebar/withDashboardSidebar';
-
 import { useSubSidebarMenu } from '../Sidebar/hooks';
+import { SidebarOverlay } from './SidebarOverlay';
+import { withDashboardSidebar } from '@/containers/Dashboard/Sidebar/withDashboardSidebar';
+import { withDashboardSidebarActions } from '@/containers/Dashboard/Sidebar/withDashboardSidebarActions';
 
 /**
  * Dashboard sidebar menu.
@@ -45,10 +43,11 @@ function SidebarOverlayBindedRouter({ sidebarSubmenuId, ...rest }) {
 /**
  * Sidebar overlay binded with redux.
  */
-export const SidebarOverlayBinded = R.compose(
+export const SidebarOverlayBinded = FF.pipe(
+  SidebarOverlayBindedRoot,
+  withDashboardSidebarActions,
   withDashboardSidebar(({ sidebarSubmenuOpen, sidebarSubmenuId }) => ({
     sidebarSubmenuOpen,
     sidebarSubmenuId,
   })),
-  withDashboardSidebarActions,
-)(SidebarOverlayBindedRoot);
+);

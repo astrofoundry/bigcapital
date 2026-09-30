@@ -1,7 +1,4 @@
 // @ts-nocheck
-import React from 'react';
-import intl from 'react-intl-universal';
-import { useHistory } from 'react-router-dom';
 import {
   Button,
   NavbarGroup,
@@ -9,17 +6,17 @@ import {
   NavbarDivider,
   Intent,
 } from '@blueprintjs/core';
-
+import * as FF from 'fp-ts/function';
+import React from 'react';
+import intl from 'react-intl-universal';
+import { useHistory } from 'react-router-dom';
 import { useContactDetailDrawerContext } from './ContactDetailDrawerProvider';
-
+import { DrawerActionsBar, Icon, FormattedMessage as T } from '@/components';
 import { withAlertActions } from '@/containers/Alert/withAlertActions';
 import { withDrawerActions } from '@/containers/Drawer/withDrawerActions';
+import { safeCallback } from '@/utils';
 
-import { DrawerActionsBar, Icon, FormattedMessage as T } from '@/components';
-
-import { safeCallback, compose } from '@/utils';
-
-function ContactDetailActionsBar({
+function ContactDetailActionsBarInner({
   // #withAlertActions
   openAlert,
 
@@ -32,7 +29,7 @@ function ContactDetailActionsBar({
   // Handle edit contact.
   const onEditContact = () => {
     return contactId
-      ? (history.push(`/${contact?.contact_service}s/${contactId}/edit`),
+      ? (history.push(`/${contact?.contactService}s/${contactId}/edit`),
         closeDrawer('contact-detail-drawer'))
       : null;
   };
@@ -40,7 +37,7 @@ function ContactDetailActionsBar({
   // Handle delete contact.
   const onDeleteContact = () => {
     return contactId
-      ? (openAlert(`${contact?.contact_service}-delete`, { contactId }),
+      ? (openAlert(`${contact?.contactService}-delete`, { contactId }),
         closeDrawer('contact-detail-drawer'))
       : null;
   };
@@ -51,7 +48,7 @@ function ContactDetailActionsBar({
         <Button
           className={Classes.MINIMAL}
           icon={<Icon icon="pen-18" />}
-          text={intl.get('edit_contact', { name: contact?.contact_service })}
+          text={intl.get('edit_contact', { name: contact?.contactService })}
           onClick={safeCallback(onEditContact)}
         />
         <NavbarDivider />
@@ -67,7 +64,8 @@ function ContactDetailActionsBar({
   );
 }
 
-export default compose(
-  withDrawerActions,
+export const ContactDetailActionsBar = FF.pipe(
+  ContactDetailActionsBarInner,
   withAlertActions,
-)(ContactDetailActionsBar);
+  withDrawerActions,
+);

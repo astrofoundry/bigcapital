@@ -1,11 +1,6 @@
-// @ts-nocheck
 import React from 'react';
+import { DialogsName } from './dialogs';
 import { FormattedMessage as T } from '@/components';
-import { Features } from '@/constants/features';
-import {
-  ISidebarMenuItemType,
-  ISidebarMenuOverlayIds,
-} from '@/containers/Dashboard/Sidebar/interfaces';
 import {
   ReportsAction,
   AbilitySubject,
@@ -26,9 +21,32 @@ import {
   PreferencesAbility,
   TaxRateAction,
 } from '@/constants/abilityOption';
-import { DialogsName } from './dialogs';
+import { Features } from '@/constants/features';
+import {
+  ISidebarMenuItemType,
+  ISidebarMenuOverlayIds,
+} from '@/containers/Dashboard/Sidebar/interfaces';
 
-export const SidebarMenu = [
+export interface SidebarMenuItemPermission {
+  subject: string;
+  ability: string;
+}
+
+export interface SidebarMenuItem {
+  text: React.ReactNode;
+  type: ISidebarMenuItemType;
+  disabled?: boolean;
+  href?: string;
+  matchExact?: boolean;
+  overlayId?: ISidebarMenuOverlayIds;
+  dialogName?: DialogsName;
+  divider?: boolean;
+  feature?: string;
+  permission?: SidebarMenuItemPermission;
+  children?: SidebarMenuItem[];
+}
+
+export const SidebarMenu: SidebarMenuItem[] = [
   // ---------------
   // # Homepage
   // ---------------
@@ -411,6 +429,7 @@ export const SidebarMenu = [
                 text: 'Tax Rates',
                 href: '/tax-rates',
                 type: ISidebarMenuItemType.Link,
+                feature: Features.SalesTax,
                 permission: {
                   subject: AbilitySubject.TaxRate,
                   ability: TaxRateAction.View,
@@ -554,62 +573,6 @@ export const SidebarMenu = [
       },
     ],
   },
-  // ---------------------
-  // # Projects Management
-  // ---------------------
-  // {
-  //   text: <T id={'sidebar.projects'} />,
-  //   type: ISidebarMenuItemType.Overlay,
-  //   overlayId: ISidebarMenuOverlayIds.Projects,
-  //   children: [
-  //     {
-  //       text: <T id={'sidebar.projects'} />,
-  //       type: ISidebarMenuItemType.Group,
-  //       children: [
-  //         {
-  //           text: <T id={'sidebar.projects'} />,
-  //           href: '/projects',
-  //           type: ISidebarMenuItemType.Link,
-  //           permission: {
-  //             subject: AbilitySubject.Project,
-  //             ability: ProjectAction.View,
-  //           },
-  //         },
-  //       ],
-  //     },
-  //     {
-  //       text: <T id={'sidebar.new_tasks'} />,
-  //       type: ISidebarMenuItemType.Group,
-  //       children: [
-  //         {
-  //           text: <T id={'sidebar.new_project'} />,
-  //           type: ISidebarMenuItemType.Dialog,
-  //           dialogName: 'project-form',
-  //           permission: {
-  //             subject: AbilitySubject.Project,
-  //             ability: ProjectAction.Create,
-  //           },
-  //         },
-  //         {
-  //           text: <T id={'sidebar.new_time_entry'} />,
-  //           type: ISidebarMenuItemType.Dialog,
-  //           dialogName: 'project-time-entry-form',
-  //         },
-  //       ],
-  //     },
-  //     {
-  //       text: <T id={'sidebar.reports'} />,
-  //       type: ISidebarMenuItemType.Group,
-  //       children: [
-  //         {
-  //           text: <T id={'sidebar.project_profitability_summary'} />,
-  //           href: '/financial-reports/project-profitability-summary',
-  //           type: ISidebarMenuItemType.Link,
-  //         },
-  //       ],
-  //     },
-  //   ],
-  // },
   // ---------------
   // # Reports
   // ---------------
@@ -764,6 +727,7 @@ export const SidebarMenu = [
             text: 'Sales Tax Liability Summary',
             href: '/financial-reports/sales-tax-liability-summary',
             type: ISidebarMenuItemType.Link,
+            feature: Features.SalesTax,
             permission: {
               subject: AbilitySubject.Report,
               ability: ReportsAction.READ_SALES_TAX_LIABILITY_SUMMARY,

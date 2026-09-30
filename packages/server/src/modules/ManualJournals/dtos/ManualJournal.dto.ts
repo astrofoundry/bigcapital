@@ -4,7 +4,6 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
-  IsDate,
   IsDateString,
   IsInt,
   IsNotEmpty,
@@ -122,7 +121,10 @@ export class CommandManualJournalDto {
   @IsBoolean()
   publish?: boolean;
 
-  @ApiProperty({ description: 'Journal entries', type: [ManualJournalEntryDto] })
+  @ApiProperty({
+    description: 'Journal entries',
+    type: [ManualJournalEntryDto],
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ManualJournalEntryDto)
@@ -133,7 +135,7 @@ export class CommandManualJournalDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => AttachmentDto)
-  attachments?: AttachmentDto[];  
+  attachments?: AttachmentDto[];
 }
 
 export class CreateManualJournalDto extends CommandManualJournalDto {}

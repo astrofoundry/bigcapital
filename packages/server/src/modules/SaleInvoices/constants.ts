@@ -2,7 +2,7 @@ export const SendSaleInvoiceQueue = 'SendSaleInvoiceQueue';
 export const SendSaleInvoiceMailJob = 'SendSaleInvoiceMailJob';
 
 export const DEFAULT_INVOICE_MAIL_SUBJECT =
-'Invoice {Invoice Number} from {Company Name}';
+  'Invoice {Invoice Number} from {Company Name}';
 export const DEFAULT_INVOICE_MAIL_CONTENT = `Hi {Customer Name},
 
 Please find attached invoice {Invoice Number} for {Invoice Amount}.
@@ -17,7 +17,7 @@ Best regards,
 
 export const DEFAULT_INVOICE_REMINDER_MAIL_SUBJECT =
   'Invoice {InvoiceNumber} reminder from {CompanyName}';
-  export const DEFAULT_INVOICE_REMINDER_MAIL_CONTENT = `
+export const DEFAULT_INVOICE_REMINDER_MAIL_CONTENT = `
   <p>Dear {CustomerName}</p>
 <p>You might have missed the payment date and the invoice is now overdue by {OverdueDays} days.</p>
 <p>Invoice <strong>#{InvoiceNumber}</strong><br />
@@ -30,7 +30,7 @@ Amount   : <strong>{InvoiceAmount}</strong></p>
 </p>
 `;
 
-export const PUBLIC_PAYMENT_LINK = "{BASE_URL}/payment/{PAYMENT_LINK_ID}";
+export const PUBLIC_PAYMENT_LINK = '{BASE_URL}/payment/{PAYMENT_LINK_ID}';
 
 export const ERRORS = {
   INVOICE_NUMBER_NOT_UNIQUE: 'INVOICE_NUMBER_NOT_UNIQUE',

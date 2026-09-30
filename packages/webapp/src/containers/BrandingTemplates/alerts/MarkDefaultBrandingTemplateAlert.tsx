@@ -1,19 +1,17 @@
 // @ts-nocheck
+import { Alert, Intent } from '@blueprintjs/core';
+import * as FF from 'fp-ts/function';
 import React from 'react';
 import intl from 'react-intl-universal';
 import { AppToaster } from '@/components';
-import { Alert, Intent } from '@blueprintjs/core';
-import { useAssignPdfTemplateAsDefault } from '@/hooks/query/pdf-templates';
-
-import { withAlertStoreConnect } from '@/containers/Alert/withAlertStoreConnect';
 import { withAlertActions } from '@/containers/Alert/withAlertActions';
-
-import { compose } from '@/utils';
+import { withAlertStoreConnect } from '@/containers/Alert/withAlertStoreConnect';
+import { useAssignPdfTemplateAsDefault } from '@/hooks/query/pdf-templates';
 
 /**
  * Mark default branding template alert.
  */
-function MarkDefaultBrandingTemplateAlert({
+function MarkDefaultBrandingTemplateAlertInner({
   // #ownProps
   name,
 
@@ -60,13 +58,15 @@ function MarkDefaultBrandingTemplateAlert({
       onConfirm={handleConfirmDelete}
     >
       <p>
-        Are you sure want to mark the given branding template as a default template?
+        Are you sure want to mark the given branding template as a default
+        template?
       </p>
     </Alert>
   );
 }
 
-export default compose(
-  withAlertStoreConnect(),
+export const MarkDefaultBrandingTemplateAlert = FF.pipe(
+  MarkDefaultBrandingTemplateAlertInner,
   withAlertActions,
-)(MarkDefaultBrandingTemplateAlert);
+  withAlertStoreConnect(),
+);

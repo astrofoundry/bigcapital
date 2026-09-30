@@ -1,9 +1,8 @@
-// @ts-nocheck
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { ModelObject } from 'objection';
 import { castArray } from 'lodash';
-import * as R from 'ramda';
-import { Knex } from 'knex';
+import { flow } from 'fp-ts/function';
+import * as A from 'fp-ts/Array';
 import { isEmpty } from 'lodash';
 import * as moment from 'moment';
 import { transformToMapBy } from '@/utils/transform-to-map-by';
@@ -11,15 +10,18 @@ import { ProfitLossSheetQuery } from './ProfitLossSheetQuery';
 import { Ledger } from '@/modules/Ledger/Ledger';
 import { IProfitLossSheetQuery } from './ProfitLossSheet.types';
 import { IAccountTransactionsGroupBy } from '../BalanceSheet/BalanceSheet.types';
+import { IFinancialDatePeriodsUnit } from '../../types/Report.types';
 import { Account } from '@/modules/Accounts/models/Account.model';
 import { FinancialDatePeriods } from '../../common/FinancialDatePeriods';
 import { AccountTransaction } from '@/modules/Accounts/models/AccountTransaction.model';
 import { TenancyContext } from '@/modules/Tenancy/TenancyContext.service';
 import { TenantModelProxy } from '@/modules/System/models/TenantBaseModel';
+import { GConstructor } from '@/common/types/Constructor';
+import { FinancialSheet } from '../../common/FinancialSheet';
 
 @Injectable({ scope: Scope.TRANSIENT })
-export class ProfitLossSheetRepository extends R.compose(FinancialDatePeriods)(
-  class {},
+export class ProfitLossSheetRepository extends flow(FinancialDatePeriods)(
+  class {} as GConstructor<FinancialSheet>,
 ) {
   @Inject(Account.name)
   public accountModel: TenantModelProxy<typeof Account>;
@@ -45,6 +47,19 @@ export class ProfitLossSheetRepository extends R.compose(FinancialDatePeriods)(
    * @param {ModelObject<Account>[]}
    */
   public accounts: ModelObject<Account>[];
+
+  /**
+   * Retrieves the given account id with its children account ids.
+   * @param {number} accountId
+   * @returns {number[]}
+   */
+  public getAccountsIdsIncludingChildren = (
+    accountId: number | string,
+  ): number[] => {
+    const childrenAccountIds = this.accountsGraph.dependenciesOf(accountId);
+
+    return [...new Set([...childrenAccountIds, accountId])];
+  };
 
   /**
    * Accounts graph.
@@ -142,7 +157,7 @@ export class ProfitLossSheetRepository extends R.compose(FinancialDatePeriods)(
     this.query = new ProfitLossSheetQuery(query);
 
     this.transactionsGroupType = this.getGroupByFromDisplayColumnsBy(
-      this.query.displayColumnsBy,
+      this.query.displayColumnsBy as IFinancialDatePeriodsUnit,
     );
   }
 
@@ -359,7 +374,7 @@ export class ProfitLossSheetRepository extends R.compose(FinancialDatePeriods)(
    * Common branches filter query.
    * @param {Knex.QueryBuilder} query
    */
-  private commonFilterBranchesQuery = (query: Knex.QueryBuilder) => {
+  private commonFilterBranchesQuery = (query: any) => {
     if (!isEmpty(this.query.query.branchesIds)) {
       query.modify('filterByBranches', this.query.query.branchesIds);
     }
@@ -379,12 +394,10 @@ export class ProfitLossSheetRepository extends R.compose(FinancialDatePeriods)(
    * @returns
    */
   public getAccountsByType = (type: string[] | string) => {
-    return R.compose(
-      R.flatten,
-      R.map((accountType) =>
-        R.defaultTo([], this.accountsByType.get(accountType)),
-      ),
-      castArray,
-    )(type);
+    return A.flatten(
+      A.map(
+        (accountType: string) => this.accountsByType.get(accountType) ?? [],
+      )(castArray<string>(type)),
+    );
   };
 }

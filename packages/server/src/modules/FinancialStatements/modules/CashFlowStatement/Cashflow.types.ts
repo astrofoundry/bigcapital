@@ -1,9 +1,11 @@
 import { Knex } from 'knex';
-import { IFinancialSheetCommonMeta, INumberFormatQuery } from '../../types/Report.types';
+import {
+  IFinancialSheetCommonMeta,
+  INumberFormatQuery,
+} from '../../types/Report.types';
 import { Account } from '@/modules/Accounts/models/Account.model';
 import { Ledger } from '@/modules/Ledger/Ledger';
 import { IFinancialTable, ITableRow } from '../../types/Table.types';
-
 
 export interface ICashFlowStatementQuery {
   fromDate: Date | string;
@@ -90,7 +92,7 @@ export type ICashFlowStatementSection =
   | ICashFlowStatementTotalSection
   | ICashFlowStatementCommonSection;
 
-export interface ICashFlowStatementColumn {}
+export type ICashFlowStatementColumn = object;
 export interface ICashFlowStatementMeta extends IFinancialSheetCommonMeta {
   formattedToDate: string;
   formattedFromDate: string;
@@ -111,7 +113,7 @@ export interface ICashFlowStatementTable extends IFinancialTable {
 export interface ICashFlowStatementService {
   cashFlow(
     tenantId: number,
-    query: ICashFlowStatementQuery
+    query: ICashFlowStatementQuery,
   ): Promise<ICashFlowStatementDOO>;
 }
 
@@ -191,27 +193,27 @@ export interface ICashFlowDate {
   date: Date;
 }
 
-export interface ICashFlowStatement {
+export type ICashFlowStatement = {
   /**
    * Constructor method.
    * @constructor
    */
-  constructor(
+  new (
     accounts: Account[],
     ledger: Ledger,
     cashLedger: Ledger,
     netIncomeLedger: Ledger,
     query: ICashFlowStatementQuery,
-    baseCurrency: string
-  ): void;
+    baseCurrency: string,
+  ): ICashFlowStatement;
 
   reportData(): ICashFlowStatementData;
-}
+};
 
-export interface ICashFlowTable {
-  constructor(reportStatement: ICashFlowStatement): void;
+export type ICashFlowTable = {
+  new (reportStatement: ICashFlowStatement): ICashFlowTable;
   tableRows(): ITableRow[];
-}
+};
 
 export interface IDateRange {
   fromDate: Date;
@@ -231,7 +233,7 @@ export interface ICashflowTransactionSchema {
   branchId?: number;
 }
 
-export interface ICashflowTransactionInput extends ICashflowTransactionSchema {}
+export type ICashflowTransactionInput = ICashflowTransactionSchema;
 
 export interface ICategorizeCashflowTransactioDTO {
   date: Date;

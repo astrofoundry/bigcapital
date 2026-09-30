@@ -1,24 +1,33 @@
-// @ts-nocheck
 import React from 'react';
-import styled from 'styled-components';
 import intl from 'react-intl-universal';
-import * as R from 'ramda';
-
+import styled from 'styled-components';
+import { useGLEntriesTableColumns } from './utils';
+import type { GLTransactionRow } from './utils';
+import type { DataTableColumn } from '@/components/Datatable/types';
 import { DataTable, CurrencyTag, TableSkeletonRows } from '@/components';
 import { TableStyle } from '@/constants';
+import { useCurrentOrganizationBaseCurrency } from '@/hooks/query';
 
-import { withCurrentOrganization } from '@/containers/Organization/withCurrentOrganization';
-import { useGLEntriesTableColumns } from './utils';
+interface JournalEntriesTableProps {
+  transactions: GLTransactionRow[];
+  columns?: DataTableColumn<GLTransactionRow>[];
+  loading?: boolean;
+  className?: string;
+}
 
 /**
  * Journal entries table.
  */
-export default function JournalEntriesTable({ transactions, ...restProps }) {
-  const columns = useGLEntriesTableColumns();
+export function JournalEntriesTable({
+  transactions,
+  columns: columnsProp,
+  ...restProps
+}: JournalEntriesTableProps) {
+  const defaultColumns = useGLEntriesTableColumns();
 
   return (
     <DataTable
-      columns={columns}
+      columns={columnsProp ?? defaultColumns}
       data={transactions}
       styleName={TableStyle.Constrant}
       TableLoadingRenderer={TableSkeletonRows}
@@ -31,9 +40,9 @@ export default function JournalEntriesTable({ transactions, ...restProps }) {
  *
  * @returns {React.JSX}
  */
-export function AmountDisplayedBaseCurrencyMessageJSX({
-  organization: { base_currency: baseCurrency },
-}) {
+export function AmountDisplayedBaseCurrencyMessageJSX() {
+  const baseCurrency = useCurrentOrganizationBaseCurrency();
+
   return (
     <Message>
       {intl.get('journal_entries.amount_displayed_base_currency')}
@@ -42,9 +51,8 @@ export function AmountDisplayedBaseCurrencyMessageJSX({
   );
 }
 
-export const AmountDisplayedBaseCurrencyMessage = R.compose(
-  withCurrentOrganization(),
-)(AmountDisplayedBaseCurrencyMessageJSX);
+export const AmountDisplayedBaseCurrencyMessage =
+  AmountDisplayedBaseCurrencyMessageJSX;
 
 const Message = styled.div`
   font-size: 10px;

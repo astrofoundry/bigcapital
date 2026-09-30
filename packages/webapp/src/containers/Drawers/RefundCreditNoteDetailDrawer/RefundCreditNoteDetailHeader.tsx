@@ -1,8 +1,8 @@
 // @ts-nocheck
+import { defaultTo } from 'lodash';
 import React from 'react';
 import intl from 'react-intl-universal';
-import { defaultTo } from 'lodash';
-
+import { useRefundCreditNoteDrawerContext } from './RefundCreditNoteDrawerProvider';
 import {
   CommercialDocHeader,
   FormatDate,
@@ -10,9 +10,7 @@ import {
   DetailItem,
 } from '@/components';
 
-import { useRefundCreditNoteDrawerContext } from './RefundCreditNoteDrawerProvider';
-
-export default function RefundCreditNoteDetailHeader() {
+export function RefundCreditNoteDetailHeader() {
   const { refundCreditTransaction } = useRefundCreditNoteDrawerContext();
 
   return (
@@ -21,23 +19,23 @@ export default function RefundCreditNoteDetailHeader() {
         <DetailItem
           label={intl.get('date')}
           children={
-            <FormatDate value={refundCreditTransaction.formatted_date} />
+            <FormatDate value={refundCreditTransaction.formattedDate} />
           }
         />
         <DetailItem label={intl.get('refund_credit.drawer.label.amount')}>
-          <strong>{refundCreditTransaction.formtted_amount}</strong>
+          <strong>{refundCreditTransaction.formattedAmount}</strong>
         </DetailItem>
         <DetailItem
           label={intl.get('refund_credit.drawer.label.credit_note_no')}
-          children={refundCreditTransaction.credit_note?.credit_note_number}
+          children={refundCreditTransaction.creditNote?.creditNoteNumber}
         />
 
         <DetailItem
           label={intl.get('refund_credit.drawer.label.withdrawal_account')}
-          children={refundCreditTransaction.from_account.name}
+          children={refundCreditTransaction.fromAccount.name}
         />
         <DetailItem label={intl.get('refund_credit.drawer.label.reference_no')}>
-          {defaultTo(refundCreditTransaction.reference_no, '—')}
+          {defaultTo(refundCreditTransaction.referenceNo, '—')}
         </DetailItem>
         <DetailItem label={intl.get('refund_credit.drawer.label.description')}>
           {defaultTo(refundCreditTransaction.description, '—')}

@@ -1,8 +1,9 @@
-// @ts-nocheck
 import React from 'react';
+import type { PreferencesMenuItem } from './types';
 import { FormattedMessage as T } from '@/components';
+import { Features } from '@/constants/features';
 
-export const PreferencesMenu = [
+export const PreferencesMenu: PreferencesMenuItem[] = [
   {
     text: <T id={'general'} />,
     disabled: false,
@@ -23,7 +24,7 @@ export const PreferencesMenu = [
   },
   {
     text: 'Payment Methods',
-    href: '/preferences/payment-methods'
+    href: '/preferences/payment-methods',
   },
   {
     text: <T id={'preferences.estimates'} />,
@@ -59,6 +60,11 @@ export const PreferencesMenu = [
     href: '/preferences/accountant',
   },
   {
+    text: <T id={'features.label'} />,
+    disabled: false,
+    href: '/preferences/features',
+  },
+  {
     text: <T id={'items'} />,
     disabled: false,
     href: '/preferences/items',
@@ -73,9 +79,10 @@ export const PreferencesMenu = [
     disabled: false,
     href: '/preferences/api-keys',
   },
-  // {
-  //   text: <T id={'sms_integration.label'} />,
-  //   disabled: false,
-  //   href: '/preferences/sms-message',
-  // },
+  {
+    text: <T id={'sms_integration.label'} />,
+    disabled: false,
+    href: '/preferences/sms-message',
+    feature: Features.SmsNotifications,
+  },
 ];

@@ -1,8 +1,8 @@
 // @ts-nocheck
+import { defaultTo } from 'lodash';
 import React from 'react';
 import intl from 'react-intl-universal';
-import { defaultTo } from 'lodash';
-
+import { useRefundVendorCreditNoteDrawerContext } from './RefundVendorCreditDrawerProvider';
 import {
   CommercialDocHeader,
   FormatDate,
@@ -10,9 +10,7 @@ import {
   DetailItem,
 } from '@/components';
 
-import { useRefundVendorCreditNoteDrawerContext } from './RefundVendorCreditDrawerProvider';
-
-export default function RefundVendorCreditDetailHeader() {
+export function RefundVendorCreditDetailHeader() {
   const { refundVendorTransaction } = useRefundVendorCreditNoteDrawerContext();
 
   return (
@@ -21,25 +19,31 @@ export default function RefundVendorCreditDetailHeader() {
         <DetailItem
           label={intl.get('date')}
           children={
-            <FormatDate value={refundVendorTransaction.formatted_date} />
+            <FormatDate value={refundVendorTransaction.formattedDate} />
           }
         />
-        <DetailItem label={intl.get('refund_vendor_credit.drawer.label.amount')}>
-          <strong>{refundVendorTransaction.formtted_amount}</strong>
+        <DetailItem
+          label={intl.get('refund_vendor_credit.drawer.label.amount')}
+        >
+          <strong>{refundVendorTransaction.formattedAmount}</strong>
         </DetailItem>
         <DetailItem
           label={intl.get('refund_vendor_credit.drawer.label.vendor_credit_no')}
-          children={refundVendorTransaction.vendor_credit?.vendor_credit_number}
+          children={refundVendorTransaction.vendorCredit?.vendorCreditNumber}
         />
 
         <DetailItem
           label={intl.get('refund_vendor_credit.drawer.label.deposit_account')}
-          children={refundVendorTransaction.deposit_account.name}
+          children={refundVendorTransaction.depositAccount.name}
         />
-        <DetailItem label={intl.get('refund_vendor_credit.drawer.label.reference_no')}>
-          {defaultTo(refundVendorTransaction.reference_no, '—')}
+        <DetailItem
+          label={intl.get('refund_vendor_credit.drawer.label.reference_no')}
+        >
+          {defaultTo(refundVendorTransaction.referenceNo, '—')}
         </DetailItem>
-        <DetailItem label={intl.get('refund_vendor_credit.drawer.label.description')}>
+        <DetailItem
+          label={intl.get('refund_vendor_credit.drawer.label.description')}
+        >
           {defaultTo(refundVendorTransaction.description, '—')}
         </DetailItem>
       </DetailsMenu>

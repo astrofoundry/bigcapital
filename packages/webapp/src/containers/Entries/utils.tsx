@@ -1,12 +1,12 @@
 // @ts-nocheck
-import React, { useCallback, useMemo } from 'react';
-import * as R from 'ramda';
+import * as FF from 'fp-ts/function';
 import { sumBy, isEmpty, last, keyBy, groupBy } from 'lodash';
+import React, { useCallback, useMemo } from 'react';
+import { useItemEntriesTableContext } from './ItemEntriesTableProvider';
 import { useItem } from '@/hooks/query';
 import {
   toSafeNumber,
   saveInvoke,
-  compose,
   updateTableCell,
   updateAutoAddNewLine,
   updateMinEntriesLines,
@@ -15,7 +15,6 @@ import {
   formattedAmount,
   updateRemoveLineByIndex,
 } from '@/utils';
-import { useItemEntriesTableContext } from './ItemEntriesTableProvider';
 
 export const ITEM_TYPE = {
   SELLABLE: 'SELLABLE',
@@ -60,14 +59,14 @@ export function getEntriesTotal(entries) {
  * @param {Array} entries - Entries.
  * @return {Array}
  */
-export const ensureEntriesHaveEmptyLine = R.curry((defaultEntry, entries) => {
+export const ensureEntriesHaveEmptyLine = (defaultEntry) => (entries) => {
   const lastEntry = last(entries);
 
   if (isEmpty(lastEntry.account_id) || isEmpty(lastEntry.amount)) {
     return [...entries, defaultEntry];
   }
   return entries;
-});
+};
 
 /**
  * Disable landed cost checkbox once the item type is not service or non-inventorty.
@@ -111,31 +110,30 @@ export function useFetchItemRow({ landedCost, itemType, notifyNewRow }) {
     if (isItemSuccess && item && itemRow) {
       const { rowIndex } = itemRow;
       const price =
-        itemType === ITEM_TYPE.PURCHASABLE ? item.cost_price : item.sell_price;
+        itemType === ITEM_TYPE.PURCHASABLE ? item.costPrice : item.sellPrice;
 
       const description =
         itemType === ITEM_TYPE.PURCHASABLE
-          ? item.purchase_description
-          : item.sell_description;
+          ? item.purchaseDescription
+          : item.sellDescription;
 
       // Detarmines whether the landed cost checkbox should be disabled.
       const landedCostDisabled = isLandedCostDisabled(item);
 
       const taxRateId =
         itemType === ITEM_TYPE.PURCHASABLE
-          ? item.purchase_tax_rate_id
-          : item.sell_tax_rate_id;
+          ? item.purchaseTaxRateId
+          : item.sellTaxRateId;
 
       // The new row.
       const newRow = {
         rate: price,
         description,
         quantity: 1,
-        tax_rate_id: taxRateId,
         ...(landedCost
           ? {
-              landed_cost: false,
-              landed_cost_disabled: landedCostDisabled,
+              landedCost: false,
+              landedCostDisabled: landedCostDisabled,
             }
           : {}),
         taxRateId,
@@ -158,11 +156,15 @@ export function useFetchItemRow({ landedCost, itemType, notifyNewRow }) {
 /**
  * Compose table rows when edit specific row index of table rows.
  */
-export const composeRowsOnEditCell = R.curry(
-  (rowIndex, columnId, value, defaultEntry, rows) => {
-    return compose()(rows);
-  },
-);
+export const composeRowsOnEditCell = (
+  rowIndex,
+  columnId,
+  value,
+  defaultEntry,
+  rows,
+) => {
+  return FF.pipe(rows);
+};
 
 /**
  * Compose table rows when insert a new row to table rows.
@@ -171,33 +173,34 @@ export const useComposeRowsOnNewRow = () => {
   const { taxRates, isInclusiveTax } = useItemEntriesTableContext();
 
   return React.useMemo(() => {
-    return R.curry((rowIndex, newRow, rows) => {
-      return compose(
-        assignEntriesTaxAmount(isInclusiveTax),
-        assignEntriesTaxRate(taxRates),
-        orderingLinesIndexes,
-        updateItemsEntriesTotal,
+    return (rowIndex, newRow, rows) => {
+      return FF.pipe(
+        rows,
         updateTableRow(rowIndex, newRow),
-      )(rows);
-    });
+        updateItemsEntriesTotal,
+        orderingLinesIndexes,
+        assignEntriesTaxRate(taxRates),
+        assignEntriesTaxAmount(isInclusiveTax),
+      );
+    };
   }, [isInclusiveTax, taxRates]);
 };
 
 /**
  * Associate tax rate to entries.
  */
-export const assignEntriesTaxRate = R.curry((taxRates, entries) => {
+export const assignEntriesTaxRate = (taxRates) => (entries) => {
   const taxRatesById = keyBy(taxRates, 'id');
 
   return entries.map((entry) => {
-    const taxRate = taxRatesById[entry.tax_rate_id];
+    const taxRate = taxRatesById[entry.taxRateId];
 
     return {
       ...entry,
-      tax_rate: taxRate?.rate || 0,
+      taxRate: taxRate?.rate || 0,
     };
   });
-});
+};
 
 /**
  * Assign tax amount to entries.
@@ -205,20 +208,20 @@ export const assignEntriesTaxRate = R.curry((taxRates, entries) => {
  * @param entries
  * @returns
  */
-export const assignEntriesTaxAmount = R.curry(
-  (isInclusiveTax: boolean, entries) => {
-    return entries.map((entry) => {
+export const assignEntriesTaxAmount = (isInclusiveTax: boolean, entries?) => {
+  const assignToEntries = (list) =>
+    list.map((entry) => {
       const taxAmount = isInclusiveTax
-        ? getInclusiveTaxAmount(entry.amount, entry.tax_rate)
-        : getExlusiveTaxAmount(entry.amount, entry.tax_rate);
+        ? getInclusiveTaxAmount(entry.amount, entry.taxRate)
+        : getExlusiveTaxAmount(entry.amount, entry.taxRate);
 
       return {
         ...entry,
-        tax_amount: taxAmount,
+        taxAmount,
       };
     });
-  },
-);
+  return entries === undefined ? assignToEntries : assignToEntries(entries);
+};
 
 /**
  * Get inclusive tax amount.
@@ -250,14 +253,15 @@ export const useComposeRowsOnEditTableCell = () => {
 
   return useCallback(
     (rowIndex, columnId, value) => {
-      return R.compose(
-        assignEntriesTaxAmount(isInclusiveTax),
-        assignEntriesTaxRate(taxRates),
-        orderingLinesIndexes,
-        updateAutoAddNewLine(defaultEntry, ['item_id']),
-        updateItemsEntriesTotal,
+      return FF.pipe(
+        localValue,
         updateTableCell(rowIndex, columnId, value),
-      )(localValue);
+        updateItemsEntriesTotal,
+        updateAutoAddNewLine(defaultEntry, ['itemId']),
+        orderingLinesIndexes,
+        assignEntriesTaxRate(taxRates),
+        assignEntriesTaxAmount(isInclusiveTax),
+      );
     },
     [taxRates, isInclusiveTax, localValue, defaultEntry],
   );
@@ -273,12 +277,11 @@ export const useComposeRowsOnRemoveTableRow = () => {
 
   return useCallback(
     (rowIndex) => {
-      return compose(
-        // Ensure minimum lines count.
+      return FF.pipe(
+        localValue, // Remove the line by the given index.
+        updateRemoveLineByIndex(rowIndex), // Ensure minimum lines count.
         updateMinEntriesLines(minLinesNumber, defaultEntry),
-        // Remove the line by the given index.
-        updateRemoveLineByIndex(rowIndex),
-      )(localValue);
+      );
     },
     [minLinesNumber, defaultEntry, localValue],
   );
@@ -286,22 +289,22 @@ export const useComposeRowsOnRemoveTableRow = () => {
 
 /**
  * Retrieves the aggregate tax rates from the given item entries.
- * @param {string} currencyCode - 
- * @param {any} taxRates - 
- * @param {any} entries - 
+ * @param {string} currencyCode -
+ * @param {any} taxRates -
+ * @param {any} entries -
  */
-export const aggregateItemEntriesTaxRates = R.curry(
-  (currencyCode, taxRates, entries) => {
+export const aggregateItemEntriesTaxRates =
+  (currencyCode, taxRates) => (entries) => {
     const taxRatesById = keyBy(taxRates, 'id');
 
     // Calculate the total tax amount of invoice entries.
-    const filteredEntries = entries.filter((e) => e.tax_rate_id);
-    const groupedTaxRates = groupBy(filteredEntries, 'tax_rate_id');
+    const filteredEntries = entries.filter((e) => e.taxRateId);
+    const groupedTaxRates = groupBy(filteredEntries, 'taxRateId');
 
     return Object.keys(groupedTaxRates).map((taxRateId) => {
       const taxRate = taxRatesById[taxRateId];
       const taxRates = groupedTaxRates[taxRateId];
-      const totalTaxAmount = sumBy(taxRates, 'tax_amount');
+      const totalTaxAmount = sumBy(taxRates, 'taxAmount');
       const taxAmountFormatted = formattedAmount(totalTaxAmount, currencyCode);
 
       return {
@@ -312,5 +315,4 @@ export const aggregateItemEntriesTaxRates = R.curry(
         taxAmountFormatted,
       };
     });
-  },
-);
+  };

@@ -1,4 +1,6 @@
-import * as R from 'ramda';
+import { flow } from 'fp-ts/function';
+import { isEmpty } from 'lodash';
+import { unless } from '@/common/fp';
 import {
   SalesTaxLiabilitySummaryQuery,
   SalesTaxLiabilitySummaryRate,
@@ -12,8 +14,9 @@ import { FinancialSheetStructure } from '../../common/FinancialSheetStructure';
 import { ITableRow } from '../../types/Table.types';
 import { ITableColumn } from '../../types/Table.types';
 import { tableRowMapper } from '../../utils/Table.utils';
+import { SALES_TAX_LIABILITY_COLUMN_KEYS } from '../../common/constants/tableColumnKeys';
 
-export class SalesTaxLiabilitySummaryTable extends R.pipe(
+export class SalesTaxLiabilitySummaryTable extends flow(
   FinancialTable,
   FinancialSheetStructure,
 )(AgingReport) {
@@ -41,10 +44,19 @@ export class SalesTaxLiabilitySummaryTable extends R.pipe(
    */
   private get taxRateRowAccessor() {
     return [
-      { key: 'taxName', accessor: 'taxName' },
-      { key: 'taxPercentage', accessor: 'taxPercentage.formattedAmount' },
-      { key: 'taxableAmount', accessor: 'taxableAmount.formattedAmount' },
-      { key: 'collectedTax', accessor: 'collectedTaxAmount.formattedAmount' },
+      { key: SALES_TAX_LIABILITY_COLUMN_KEYS.TAX_NAME, accessor: 'taxName' },
+      {
+        key: SALES_TAX_LIABILITY_COLUMN_KEYS.TAX_PERCENTAGE,
+        accessor: 'taxPercentage.formattedAmount',
+      },
+      {
+        key: SALES_TAX_LIABILITY_COLUMN_KEYS.TAXABLE_AMOUNT,
+        accessor: 'taxableAmount.formattedAmount',
+      },
+      {
+        key: SALES_TAX_LIABILITY_COLUMN_KEYS.COLLECTED_TAX,
+        accessor: 'collectedTaxAmount.formattedAmount',
+      },
       { key: 'taxAmount', accessor: 'taxAmount.formattedAmount' },
     ];
   }
@@ -55,10 +67,16 @@ export class SalesTaxLiabilitySummaryTable extends R.pipe(
    */
   private get taxRateTotalRowAccessors() {
     return [
-      { key: 'taxName', value: 'Total' },
-      { key: 'taxPercentage', value: '' },
-      { key: 'taxableAmount', accessor: 'taxableAmount.formattedAmount' },
-      { key: 'collectedTax', accessor: 'collectedTaxAmount.formattedAmount' },
+      { key: SALES_TAX_LIABILITY_COLUMN_KEYS.TAX_NAME, value: 'Total' },
+      { key: SALES_TAX_LIABILITY_COLUMN_KEYS.TAX_PERCENTAGE, value: '' },
+      {
+        key: SALES_TAX_LIABILITY_COLUMN_KEYS.TAXABLE_AMOUNT,
+        accessor: 'taxableAmount.formattedAmount',
+      },
+      {
+        key: SALES_TAX_LIABILITY_COLUMN_KEYS.COLLECTED_TAX,
+        accessor: 'collectedTaxAmount.formattedAmount',
+      },
       { key: 'taxAmount', accessor: 'taxAmount.formattedAmount' },
     ];
   }
@@ -124,9 +142,9 @@ export class SalesTaxLiabilitySummaryTable extends R.pipe(
    * @returns {ITableRow[]}
    */
   public tableRows(): ITableRow[] {
-    return R.compose(
-      R.unless(R.isEmpty, R.append(this.taxRateTotalRow)),
-      R.concat(this.taxRatesRows),
+    return flow(
+      (rows: ITableRow[]) => [...this.taxRatesRows, ...rows],
+      unless(isEmpty, (rows: ITableRow[]) => [...rows, this.taxRateTotalRow]),
     )([]);
   }
 
@@ -135,26 +153,26 @@ export class SalesTaxLiabilitySummaryTable extends R.pipe(
    * @returns {ITableColumn[]}
    */
   public tableColumns(): ITableColumn[] {
-    return R.compose(this.tableColumnsCellIndexing)([
+    return this.tableColumnsCellIndexing([
       {
         label: 'Tax Name',
-        key: 'taxName',
+        key: SALES_TAX_LIABILITY_COLUMN_KEYS.TAX_NAME,
       },
       {
         label: 'Tax Percentage',
-        key: 'taxPercentage',
+        key: SALES_TAX_LIABILITY_COLUMN_KEYS.TAX_PERCENTAGE,
       },
       {
         label: 'Taxable Amount',
-        key: 'taxableAmount',
+        key: SALES_TAX_LIABILITY_COLUMN_KEYS.TAXABLE_AMOUNT,
       },
       {
         label: 'Collected Tax',
-        key: 'collectedTax',
+        key: SALES_TAX_LIABILITY_COLUMN_KEYS.COLLECTED_TAX,
       },
       {
         label: 'Tax Amount',
-        key: 'taxRate',
+        key: SALES_TAX_LIABILITY_COLUMN_KEYS.TAX_RATE,
       },
     ]);
   }

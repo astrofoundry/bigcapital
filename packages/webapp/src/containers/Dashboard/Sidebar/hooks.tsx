@@ -1,22 +1,21 @@
 // @ts-nocheck
+import * as FF from 'fp-ts/function';
 import _, { isEmpty, includes } from 'lodash';
 import React from 'react';
-import * as R from 'ramda';
 import { useHistory } from 'react-router-dom';
-
-import { useAbilityContext } from '@/hooks';
-import {
-  useSidebarSubmnuActions,
-  useDialogActions,
-  useSubscription,
-  useSidebarSubmenu,
-  useFeatureCan,
-} from '@/hooks/state';
-import { SidebarMenu } from '@/constants/sidebarMenu';
 import {
   ISidebarMenuItemType,
   ISidebarSubscriptionAbility,
 } from './interfaces';
+import { SidebarMenu } from '@/constants/sidebarMenu';
+import { useAbilityContext } from '@/hooks';
+import { useSubscription } from '@/hooks/query';
+import {
+  useSidebarSubmnuActions,
+  useDialogActions,
+  useSidebarSubmenu,
+  useFeatureCan,
+} from '@/hooks/state';
 import { filterValuesDeep, deepdash } from '@/utils';
 
 const deepDashConfig = {
@@ -52,7 +51,7 @@ function removeSidebarOverlayChildren(menu) {
  * @returns {ISidebarMenuItem[]}
  */
 export function getMainSidebarMenu() {
-  return R.compose(removeSidebarOverlayChildren)(SidebarMenu);
+  return removeSidebarOverlayChildren(SidebarMenu);
 }
 
 /**
@@ -231,20 +230,16 @@ function useBindSidebarItemClick(menu) {
     return deepdash.mapValuesDeep(
       menu,
       (item) => {
-        return R.compose(
-          R.when(
-            R.propSatisfies(R.equals(ISidebarMenuItemType.Link), 'type'),
-            bindLinkClickEvt,
-          ),
-          R.when(
-            R.propSatisfies(R.equals(ISidebarMenuItemType.Overlay), 'type'),
-            bindOverlayClickEvt,
-          ),
-          R.when(
-            R.propSatisfies(R.equals(ISidebarMenuItemType.Dialog), 'type'),
-            bindItemDialogEvt,
-          ),
-        )(item);
+        switch (item.type) {
+          case ISidebarMenuItemType.Link:
+            return bindLinkClickEvt(item);
+          case ISidebarMenuItemType.Overlay:
+            return bindOverlayClickEvt(item);
+          case ISidebarMenuItemType.Dialog:
+            return bindItemDialogEvt(item);
+          default:
+            return item;
+        }
       },
       deepDashConfig,
     );
@@ -257,7 +252,7 @@ function useBindSidebarItemClick(menu) {
  * @param   {ISidebarMenuItem[]} menu -
  * @returns {ISidebarMenuItem[]}
  */
-const findSubmenuBySubmenuId = R.curry((submenuId, menu) => {
+const findSubmenuBySubmenuId = (submenuId) => (menu) => {
   const groupItem = deepdash.findDeep(
     menu,
     (item) => {
@@ -269,21 +264,22 @@ const findSubmenuBySubmenuId = R.curry((submenuId, menu) => {
     deepDashConfig,
   );
   return groupItem?.value?.children || [];
-});
+};
 
 /**
  * Retrieves the main sidebar post-menu.
  * @returns {ISidebarMenuItem[]}
  */
 export function useMainSidebarMenu() {
-  return R.compose(
-    useBindSidebarItemClick,
-    useFlatSidebarMenu,
-    removeSidebarOverlayChildren,
-    useAssocSidebarItemHasChildren,
-    filterSidebarItemHasNoChildren,
+  return FF.pipe(
+    SidebarMenu,
     useFilterSidebarMenuAbility,
-  )(SidebarMenu);
+    filterSidebarItemHasNoChildren,
+    useAssocSidebarItemHasChildren,
+    removeSidebarOverlayChildren,
+    useFlatSidebarMenu,
+    useBindSidebarItemClick,
+  );
 }
 
 /**
@@ -312,13 +308,14 @@ function useAssocSidebarItemHasChildren(items) {
 export function useSubSidebarMenu(submenuId) {
   if (!submenuId) return [];
 
-  return R.compose(
-    useBindSidebarItemClick,
-    useFlatSidebarMenu,
-    filterSidebarItemHasNoChildren,
-    useFilterSidebarMenuAbility,
+  return FF.pipe(
+    SidebarMenu,
     findSubmenuBySubmenuId(submenuId),
-  )(SidebarMenu);
+    useFilterSidebarMenuAbility,
+    filterSidebarItemHasNoChildren,
+    useFlatSidebarMenu,
+    useBindSidebarItemClick,
+  );
 }
 
 /**

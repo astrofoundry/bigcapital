@@ -1,5 +1,5 @@
 import { FinancialSheetBranchesQueryDto } from '../../dtos/FinancialSheetBranchesQuery.dto';
-import { INumberFormatQuery } from '../../types/Report.types';
+
 import {
   IsArray,
   IsBoolean,
@@ -31,7 +31,6 @@ export class ProfitLossSheetQueryDto extends FinancialSheetBranchesQueryDto {
   @ApiProperty({ description: 'End date for the profit and loss sheet' })
   toDate: moment.MomentInput;
 
-  @ApiProperty({ description: 'Number format configuration' })
   @ValidateNested()
   @Type(() => NumberFormatQueryDto)
   @IsOptional()
@@ -64,10 +63,13 @@ export class ProfitLossSheetQueryDto extends FinancialSheetBranchesQueryDto {
   displayColumnsType: 'total' | 'date_periods';
 
   @IsString()
-  @IsEnum(['day', 'month', 'year', 'quarter'])
+  @IsEnum(['day', 'week', 'month', 'quarter', 'year'])
   @IsOptional()
-  @ApiProperty({ description: 'How to display columns' })
-  displayColumnsBy: 'day' | 'month' | 'year' | 'quarter' = 'year';
+  @ApiProperty({
+    description: 'How to display columns',
+    enum: ['day', 'week', 'month', 'quarter', 'year'],
+  })
+  displayColumnsBy: 'day' | 'week' | 'month' | 'quarter' | 'year' = 'year';
 
   @Transform(({ value }) => parseBoolean(value, false))
   @IsBoolean()

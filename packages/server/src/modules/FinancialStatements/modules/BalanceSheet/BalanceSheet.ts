@@ -1,5 +1,4 @@
-// @ts-nocheck
-import * as R from 'ramda';
+import { flow } from 'fp-ts/function';
 import { I18nService } from 'nestjs-i18n';
 import {
   IBalanceSheetQuery,
@@ -19,22 +18,28 @@ import { BalanceSheetFiltering } from './BalanceSheetFiltering';
 import { BalanceSheetNetIncome } from './BalanceSheetNetIncome';
 import { BalanceSheetAggregators } from './BalanceSheetAggregators';
 import { BalanceSheetAccounts } from './BalanceSheetAccounts';
-import { INumberFormatQuery, IFinancialReportMeta, DEFAULT_REPORT_META } from '../../types/Report.types';
+import {
+  INumberFormatQuery,
+  IFinancialReportMeta,
+  DEFAULT_REPORT_META,
+} from '../../types/Report.types';
 import { FinancialSheet } from '../../common/FinancialSheet';
 
-export class BalanceSheet extends R.pipe(
-  BalanceSheetAggregators,
-  BalanceSheetAccounts,
-  BalanceSheetNetIncome,
-  BalanceSheetFiltering,
-  BalanceSheetDatePeriods,
-  BalanceSheetComparsionPreviousPeriod,
-  BalanceSheetComparsionPreviousYear,
-  BalanceSheetPercentage,
-  BalanceSheetSchema,
-  BalanceSheetBase,
-  FinancialSheetStructure,
-)(FinancialSheet) {
+export class BalanceSheet extends FinancialSheetStructure(
+  BalanceSheetBase(
+    flow(
+      BalanceSheetAggregators,
+      BalanceSheetAccounts,
+      BalanceSheetNetIncome,
+      BalanceSheetFiltering,
+      BalanceSheetDatePeriods,
+      BalanceSheetComparsionPreviousPeriod,
+      BalanceSheetComparsionPreviousYear,
+      BalanceSheetPercentage,
+      BalanceSheetSchema,
+    )(FinancialSheet),
+  ),
+) {
   /**
    * Balance sheet query.
    * @param {BalanceSheetQuery}
@@ -94,10 +99,10 @@ export class BalanceSheet extends R.pipe(
   public parseSchemaNodes = (
     schema: IBalanceSheetSchemaNode[],
   ): IBalanceSheetDataNode[] => {
-    return R.compose(
-      this.aggregatesSchemaParser,
-      this.netIncomeSchemaParser,
+    return flow(
       this.accountsSchemaParser,
+      this.netIncomeSchemaParser,
+      this.aggregatesSchemaParser,
     )(schema) as IBalanceSheetDataNode[];
   };
 
@@ -108,10 +113,10 @@ export class BalanceSheet extends R.pipe(
   public reportData = () => {
     const balanceSheetSchema = this.getSchema();
 
-    return R.compose(
-      this.reportFilterPlugin,
-      this.reportPercentageCompose,
+    return flow(
       this.parseSchemaNodes,
+      this.reportPercentageCompose,
+      this.reportFilterPlugin,
     )(balanceSheetSchema);
   };
 }

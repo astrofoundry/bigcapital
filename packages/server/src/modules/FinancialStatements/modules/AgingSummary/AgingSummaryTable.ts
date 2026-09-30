@@ -1,5 +1,7 @@
 import { I18nService } from 'nestjs-i18n';
-import * as R from 'ramda';
+import { flow } from 'fp-ts/function';
+import { isEmpty } from 'lodash';
+import { unless } from '@/common/fp';
 import {
   IAgingPeriod,
   IAgingSummaryContact,
@@ -12,13 +14,15 @@ import { AgingSummaryRowType } from './_constants';
 import { FinancialSheetStructure } from '../../common/FinancialSheetStructure';
 import { FinancialTable } from '../../common/FinancialTable';
 import {
+  IColumnMapperMeta,
   ITableColumn,
   ITableColumnAccessor,
   ITableRow,
 } from '../../types/Table.types';
 import { tableRowMapper } from '../../utils/Table.utils';
+import { AGING_SUMMARY_COLUMN_KEYS } from '../../common/constants/tableColumnKeys';
 
-export abstract class AgingSummaryTable extends R.pipe(
+export abstract class AgingSummaryTable extends flow(
   FinancialSheetStructure,
   FinancialTable,
 )(AgingReport) {
@@ -63,7 +67,7 @@ export abstract class AgingSummaryTable extends R.pipe(
     node: IAgingSummaryContact | IAgingSummaryTotal,
   ): ITableColumnAccessor[] => {
     return node.aging.map((aging, index) => ({
-      key: 'aging_period',
+      key: AGING_SUMMARY_COLUMN_KEYS.AGING_PERIOD,
       accessor: `aging[${index}].total.formattedAmount`,
     }));
   };
@@ -73,7 +77,10 @@ export abstract class AgingSummaryTable extends R.pipe(
    * @returns {ITableColumnAccessor}
    */
   protected get contactNameNodeAccessor(): ITableColumnAccessor {
-    return { key: 'customer_name', accessor: 'customerName' };
+    return {
+      key: AGING_SUMMARY_COLUMN_KEYS.CUSTOMER_NAME,
+      accessor: 'customerName',
+    };
   }
 
   /**
@@ -84,14 +91,18 @@ export abstract class AgingSummaryTable extends R.pipe(
   protected contactNodeAccessors = (
     node: IAgingSummaryContact,
   ): ITableColumnAccessor[] => {
-    return R.compose(
-      R.concat([
-        this.contactNameNodeAccessor,
-        { key: 'current', accessor: 'current.formattedAmount' },
-        ...this.agingNodeAccessors(node),
-        { key: 'total', accessor: 'total.formattedAmount' },
-      ]),
-    )([]);
+    return [
+      this.contactNameNodeAccessor,
+      {
+        key: AGING_SUMMARY_COLUMN_KEYS.CURRENT,
+        accessor: 'current.formattedAmount',
+      },
+      ...this.agingNodeAccessors(node),
+      {
+        key: AGING_SUMMARY_COLUMN_KEYS.TOTAL,
+        accessor: 'total.formattedAmount',
+      },
+    ];
   };
 
   /**
@@ -119,20 +130,23 @@ export abstract class AgingSummaryTable extends R.pipe(
   /**
    * Retrieves the common columns for all report nodes.
    * @param {IAgingSummaryTotal}
-   * @returns {ITableColumnAccessor[]}
+   * @returns {IColumnMapperMeta[]}
    */
   protected totalNodeAccessors = (
     node: IAgingSummaryTotal,
-  ): ITableColumnAccessor[] => {
-    // @ts-ignore
-    return R.compose(
-      R.concat([
-        { key: 'blank', value: '' },
-        { key: 'current', accessor: 'current.formattedAmount' },
-        ...this.agingNodeAccessors(node),
-        { key: 'total', accessor: 'total.formattedAmount' },
-      ]),
-    )([]);
+  ): IColumnMapperMeta[] => {
+    return [
+      { key: 'blank', value: '' },
+      {
+        key: AGING_SUMMARY_COLUMN_KEYS.CURRENT,
+        accessor: 'current.formattedAmount',
+      },
+      ...this.agingNodeAccessors(node),
+      {
+        key: AGING_SUMMARY_COLUMN_KEYS.TOTAL,
+        accessor: 'total.formattedAmount',
+      },
+    ];
   };
 
   /**
@@ -172,9 +186,9 @@ export abstract class AgingSummaryTable extends R.pipe(
    * @returns {ITableRow[]}
    */
   public tableRows = (): ITableRow[] => {
-    return R.compose(
-      R.unless(R.isEmpty, R.append(this.totalRow)),
-      R.concat(this.contactsRows),
+    return flow(
+      (rows: ITableRow[]) => [...this.contactsRows, ...rows],
+      unless(isEmpty, (rows: ITableRow[]) => [...rows, this.totalRow]),
     )([]);
   };
 
@@ -191,7 +205,7 @@ export abstract class AgingSummaryTable extends R.pipe(
         label: `${agingPeriod.beforeDays} - ${
           agingPeriod.toDays || 'And Over'
         }`,
-        key: 'aging_period',
+        key: AGING_SUMMARY_COLUMN_KEYS.AGING_PERIOD,
       };
     });
   };
@@ -209,7 +223,7 @@ export abstract class AgingSummaryTable extends R.pipe(
    * @returns {ITableColumn}
    */
   public tableColumns = (): ITableColumn[] => {
-    return R.compose(this.tableColumnsCellIndexing)([
+    return this.tableColumnsCellIndexing([
       this.contactNameTableColumn(),
       { label: 'Current', key: 'current' },
       ...this.agingTableColumns(),

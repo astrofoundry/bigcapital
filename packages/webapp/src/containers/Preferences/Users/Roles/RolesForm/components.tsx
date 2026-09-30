@@ -1,14 +1,8 @@
 // @ts-nocheck
+import { Checkbox, Popover } from '@blueprintjs/core';
+import { Field } from 'formik';
 import React from 'react';
 import styled from 'styled-components';
-import { Field } from 'formik';
-import { Checkbox, Popover } from '@blueprintjs/core';
-
-import {
-  getPermissionsSchema,
-  ModulePermissionsStyle,
-} from '@/constants/permissionsSchema';
-import { Card, If, ButtonLink, Choose, T } from '@/components';
 import {
   getSerivceColumnPermission,
   getServiceExtraPermissions,
@@ -16,14 +10,54 @@ import {
   handleCheckboxFullAccessChange,
   handleCheckboxPermissionChange,
 } from './utils';
+import { Card, If, ButtonLink, Choose, T } from '@/components';
+import {
+  getPermissionsSchema,
+  ModulePermissionsStyle,
+} from '@/constants/permissionsSchema';
+
+interface PermissionItem {
+  subject: string;
+  ability?: string;
+  key?: string;
+  value: boolean;
+  default?: boolean;
+  relatedColumn?: string;
+  label?: string;
+}
+
+interface PermissionService {
+  subject: string;
+  label?: string;
+  permissions: PermissionItem[];
+}
+
+interface PermissionModule {
+  label?: string;
+  type?: string;
+  serviceFullAccess?: boolean;
+  columns?: Array<{ key: string; label?: string }>;
+  services: PermissionService[];
+}
+
+interface FormState {
+  values: {
+    permissions: Record<string, boolean>;
+    serviceFullAccess: Record<string, boolean | number>;
+  };
+  setFieldValue: (field: string, value: unknown) => void;
+}
 
 // Module permissions context.
-const ModulePermissionsContext = React.createContext();
-const ModuleServiceContext = React.createContext();
+const ModulePermissionsContext = React.createContext<{
+  module: PermissionModule;
+} | null>(null);
+const ModuleServiceContext = React.createContext<{
+  service: PermissionService;
+} | null>(null);
 
 /**
  * Retrieves the module permissions provider.
- * @returns {React.JSX}
  */
 const useModulePermissionsProvider = () =>
   React.useContext(ModulePermissionsContext);
@@ -34,11 +68,18 @@ const useModulePermissionsProvider = () =>
 const useModulePermissionsServiceProvider = () =>
   React.useContext(ModuleServiceContext);
 
+interface ModulePermissionsProviderProps {
+  module: PermissionModule;
+  children: React.ReactNode;
+}
+
 /**
  * Module permissions context state provider.
- * @returns {React.JSX}
  */
-function ModulePermissionsProvider({ module, children }) {
+function ModulePermissionsProvider({
+  module,
+  children,
+}: ModulePermissionsProviderProps) {
   return (
     <ModulePermissionsContext.Provider value={{ module }}>
       {children}
@@ -46,11 +87,18 @@ function ModulePermissionsProvider({ module, children }) {
   );
 }
 
+interface ModulePermissionsServiceProviderProps {
+  service: PermissionService;
+  children: React.ReactNode;
+}
+
 /**
  * Module permissions service context state provider.
- * @returns {React.JSX}
  */
-function ModulePermissionsServiceProvider({ service, children }) {
+function ModulePermissionsServiceProvider({
+  service,
+  children,
+}: ModulePermissionsServiceProviderProps) {
   return (
     <ModuleServiceContext.Provider value={{ service }}>
       {children}
@@ -58,23 +106,27 @@ function ModulePermissionsServiceProvider({ service, children }) {
   );
 }
 
+interface PermissionBodyColumnProps {
+  column: { key: string; label?: string };
+}
+
 /**
  * Permissions body columns.
- * @returns {React.JSX}
  */
-function PermissionBodyColumn({ column }) {
+function PermissionBodyColumn({ column }: PermissionBodyColumnProps) {
   // Module permssions service context.
-  const { service } = useModulePermissionsServiceProvider();
+  const ctx = useModulePermissionsServiceProvider();
+  const service = ctx?.service as PermissionService;
 
   // Retrieve the related permission of the given column key.
   const permission = getSerivceColumnPermission(service, column.key);
 
   // Display empty cell if the current column key has no related permissions.
   if (!permission) {
-    return <td class={'permission-checkbox'}></td>;
+    return <td className={'permission-checkbox'}></td>;
   }
   return (
-    <td class={'permission-checkbox'}>
+    <td className={'permission-checkbox'}>
       <Field
         name={`permissions.${service.subject}/${permission.key}`}
         type="checkbox"
@@ -83,7 +135,11 @@ function PermissionBodyColumn({ column }) {
           <PermissionCheckbox
             inline={true}
             {...field}
-            onChange={handleCheckboxPermissionChange(form, permission, service)}
+            onChange={handleCheckboxPermissionChange(
+              form as FormState,
+              permission,
+              service,
+            )}
           />
         )}
       </Field>
@@ -91,20 +147,27 @@ function PermissionBodyColumn({ column }) {
   );
 }
 
+interface ModulePermissionsTableColumnsProps {
+  columns: Array<{ key: string; label?: string }>;
+}
+
 /**
  *
- * @returns {React.JSX}
  */
-function ModulePermissionsTableColumns({ columns }) {
-  return columns.map((column) => <PermissionBodyColumn column={column} />);
+function ModulePermissionsTableColumns({
+  columns,
+}: ModulePermissionsTableColumnsProps) {
+  return columns.map((column, idx) => (
+    <PermissionBodyColumn key={column.key ?? idx} column={column} />
+  ));
 }
 
 /**
  * Module columns permissions extra permissions popover.
- * @returns {React.JSX}
  */
 function ModuleExtraPermissionsPopover() {
-  const { service } = useModulePermissionsServiceProvider();
+  const ctx = useModulePermissionsServiceProvider();
+  const service = ctx?.service as PermissionService;
 
   // Retrieve the extra permissions of the given service.
   const extraPermissions = getServiceExtraPermissions(service);
@@ -118,6 +181,7 @@ function ModuleExtraPermissionsPopover() {
       <ExtraPermissionsRoot>
         {extraPermissions.map((permission) => (
           <Field
+            key={`${service.subject}/${permission.key}`}
             name={`permissions.${service.subject}/${permission.key}`}
             type="checkbox"
           >
@@ -127,7 +191,7 @@ function ModuleExtraPermissionsPopover() {
                 label={permission.label}
                 {...field}
                 onChange={handleCheckboxPermissionChange(
-                  form,
+                  form as FormState,
                   permission,
                   service,
                 )}
@@ -142,10 +206,10 @@ function ModuleExtraPermissionsPopover() {
 
 /**
  * Module permissions extra permissions.
- * @returns {React.JSX}
  */
 function ModulePermissionExtraPermissions() {
-  const { service } = useModulePermissionsServiceProvider();
+  const ctx = useModulePermissionsServiceProvider();
+  const service = ctx?.service as PermissionService;
 
   // Retrieve the extra permissions of the given service.
   const extraPermissions = getServiceExtraPermissions(service);
@@ -161,24 +225,25 @@ function ModulePermissionExtraPermissions() {
 
 /**
  * Module permissions table head.
- * @returns {React.JSX}
  */
 function ModulePermissionsTableHead() {
-  const {
-    module: { serviceFullAccess, columns },
-  } = useModulePermissionsProvider();
+  const ctx = useModulePermissionsProvider();
+  const module = ctx?.module as PermissionModule;
+  const { serviceFullAccess, columns } = module;
 
   return (
     <thead>
       <tr>
         <th></th>
         <If condition={serviceFullAccess}>
-          <th class={'full'}>
+          <th className={'full'}>
             <T id={'permissions.column.full_access'} />
           </th>
         </If>
-        {columns.map((column) => (
-          <th class={'permission'}>{column.label}</th>
+        {columns?.map((column, idx) => (
+          <th key={column.key ?? idx} className={'permission'}>
+            {column.label}
+          </th>
         ))}
         <th></th>
       </tr>
@@ -188,18 +253,19 @@ function ModulePermissionsTableHead() {
 
 /**
  * Module permissions service full access.
- * @returns {React.JSX}
  */
 function ModulePermissionsServiceFullAccess() {
   // Module permissions provider.
-  const { module } = useModulePermissionsProvider();
+  const modCtx = useModulePermissionsProvider();
+  const module = modCtx?.module as PermissionModule;
 
   // Module service provider.
-  const { service } = useModulePermissionsServiceProvider();
+  const svcCtx = useModulePermissionsServiceProvider();
+  const service = svcCtx?.service as PermissionService;
 
   return (
     <If condition={module.serviceFullAccess}>
-      <td class="full-access-permission">
+      <td className="full-access-permission">
         <Field name={`serviceFullAccess.${service.subject}`} type="checkbox">
           {({ form, field }) => (
             <PermissionCheckbox
@@ -208,7 +274,10 @@ function ModulePermissionsServiceFullAccess() {
               indeterminate={
                 field.value === FULL_ACCESS_CHECKBOX_STATE.INDETARMINE
               }
-              onChange={handleCheckboxFullAccessChange(service, form)}
+              onChange={handleCheckboxFullAccessChange(
+                service,
+                form as FormState,
+              )}
             />
           )}
         </Field>
@@ -219,22 +288,24 @@ function ModulePermissionsServiceFullAccess() {
 
 /**
  * Module permissions table body.
- * @returns {React.JSX}
  */
 function ModulePermissionsTableBody() {
-  const {
-    module: { services, columns },
-  } = useModulePermissionsProvider();
+  const ctx = useModulePermissionsProvider();
+  const module = ctx?.module as PermissionModule;
+  const { services, columns } = module;
 
   return (
     <tbody>
       {services.map((service) => (
-        <ModulePermissionsServiceProvider service={service}>
+        <ModulePermissionsServiceProvider
+          key={service.subject}
+          service={service}
+        >
           <tr>
             <td className="service-label">{service.label} </td>
 
             <ModulePermissionsServiceFullAccess />
-            <ModulePermissionsTableColumns columns={columns} />
+            <ModulePermissionsTableColumns columns={columns ?? []} />
             <ModulePermissionExtraPermissions />
           </tr>
         </ModulePermissionsServiceProvider>
@@ -245,7 +316,6 @@ function ModulePermissionsTableBody() {
 
 /**
  * Module permissions table.
- * @returns {React.JSX}
  */
 function ModulePermissionsTable() {
   return (
@@ -258,15 +328,15 @@ function ModulePermissionsTable() {
 
 /**
  * Module vertical table cells.
- * @returns {React.JSX}
  */
 function ModuleVerticalTableCells() {
-  const { service } = useModulePermissionsServiceProvider();
+  const ctx = useModulePermissionsServiceProvider();
+  const service = ctx?.service as PermissionService;
 
   return (
-    <td class={'permissions'}>
+    <td className={'permissions'}>
       {service.permissions.map((permission) => (
-        <div>
+        <div key={`${service.subject}/${permission.key}`}>
           <Field
             name={`permissions.${service.subject}/${permission.key}`}
             type="checkbox"
@@ -277,7 +347,7 @@ function ModuleVerticalTableCells() {
                 label={permission.label}
                 {...field}
                 onChange={handleCheckboxPermissionChange(
-                  form,
+                  form as FormState,
                   permission,
                   service,
                 )}
@@ -292,19 +362,22 @@ function ModuleVerticalTableCells() {
 
 /**
  * Module permissions vertical services.
- * @returns {React.JSX}
  */
 function ModulePermissionsVerticalServices() {
-  const { module } = useModulePermissionsProvider();
+  const ctx = useModulePermissionsProvider();
+  const module = ctx?.module as PermissionModule;
 
   return (
     <ModulePermissionsVerticalServicesRoot>
       <ModulePermissionsVerticalTable>
         <tbody>
           {module.services.map((service) => (
-            <ModulePermissionsServiceProvider service={service}>
+            <ModulePermissionsServiceProvider
+              key={service.subject}
+              service={service}
+            >
               <tr>
-                <td class={'service-label'}>{service.label} </td>
+                <td className={'service-label'}>{service.label} </td>
                 <ModuleVerticalTableCells />
               </tr>
             </ModulePermissionsServiceProvider>
@@ -317,10 +390,10 @@ function ModulePermissionsVerticalServices() {
 
 /**
  * Module permissions body.
- * @returns {React.JSX}
  */
 function ModulePermissionsBody() {
-  const { module } = useModulePermissionsProvider();
+  const ctx = useModulePermissionsProvider();
+  const module = ctx?.module as PermissionModule;
 
   return (
     <ModulePermissionBodyRoot>
@@ -339,11 +412,14 @@ function ModulePermissionsBody() {
   );
 }
 
+interface ModulePermissionsProps {
+  module: PermissionModule;
+}
+
 /**
  * Permissions module.
- * @returns {React.JSX}
  */
-function ModulePermissions({ module }) {
+function ModulePermissions({ module }: ModulePermissionsProps) {
   return (
     <ModulePermissionsRoot>
       <ModulePermissionsProvider module={module}>
@@ -359,15 +435,14 @@ function ModulePermissions({ module }) {
 
 /**
  * Permissions modules list.
- * @return {React.JSX}
  */
 export const RolesPermissionList = () => {
-  const permissions = getPermissionsSchema();
+  const permissions = getPermissionsSchema() as PermissionModule[];
 
   return (
     <ModulesPermission>
-      {permissions.map((module) => (
-        <ModulePermissions module={module} />
+      {permissions.map((module, idx) => (
+        <ModulePermissions key={idx} module={module} />
       ))}
     </ModulesPermission>
   );
@@ -393,17 +468,25 @@ const ModulePermissionsRoot = styled(Card)`
 `;
 
 const ModulePermissionHead = styled.div`
-  border-bottom: 1px solid #d9d9d9;
+  border-bottom: 1px solid var(--color-role-module-header-border, #d9d9d9);
   height: 38px;
   padding: 0 15px;
   display: flex;
+
+  .bp4-dark & {
+    --color-role-module-header-border: rgba(255, 255, 255, 0.1);
+  }
 `;
 
 const ModulePermissionTitle = styled.div`
   font-weight: 500;
   font-size: 16px;
   line-height: 38px;
-  color: #878787;
+  color: var(--color-role-module-title, #878787);
+
+  .bp4-dark & {
+    --color-role-module-title: rgba(255, 255, 255, 0.6);
+  }
 `;
 
 const ModulePermissionBodyRoot = styled.div``;
@@ -421,7 +504,7 @@ const ModulePermissionsTableRoot = styled.table`
         min-width: 70px;
       }
       &.full {
-        background-color: #fcfcfc;
+        background-color: var(--color-role-table-header-bg, #fcfcfc);
       }
     }
   }
@@ -429,8 +512,8 @@ const ModulePermissionsTableRoot = styled.table`
   tbody {
     tr td,
     tr th {
-      border-bottom: 1px solid #eee;
-      border-left: 1px solid #eee;
+      border-bottom: 1px solid var(--color-role-table-border, #eee);
+      border-left: 1px solid var(--color-role-table-border, #eee);
       padding: 10px;
 
       &:first-of-type {
@@ -459,7 +542,7 @@ const ModulePermissionsTableRoot = styled.table`
       }
 
       &.full-access-permission {
-        background-color: #fcfcfc;
+        background-color: var(--color-role-table-header-bg, #fcfcfc);
       }
 
       &.full-access-permission,
@@ -467,6 +550,11 @@ const ModulePermissionsTableRoot = styled.table`
         text-align: center;
       }
     }
+  }
+
+  .bp4-dark & {
+    --color-role-table-header-bg: rgba(255, 255, 255, 0.05);
+    --color-role-table-border: rgba(255, 255, 255, 0.1);
   }
 `;
 
@@ -489,12 +577,12 @@ const ModulePermissionsVerticalTable = styled.table`
     tr td {
       padding: 10px;
       vertical-align: top;
-      border-left: 1px solid #eee;
-      border-bottom: 1px solid #eee;
+      border-left: 1px solid var(--color-role-table-border, #eee);
+      border-bottom: 1px solid var(--color-role-table-border, #eee);
 
       &.service-label {
         min-width: 250px;
-        color: #333;
+        color: var(--color-role-service-label, #333);
       }
 
       &:first-of-type {
@@ -509,5 +597,10 @@ const ModulePermissionsVerticalTable = styled.table`
     tr:last-of-type td {
       border-bottom: 0;
     }
+  }
+
+  .bp4-dark & {
+    --color-role-table-border: rgba(255, 255, 255, 0.1);
+    --color-role-service-label: rgba(255, 255, 255, 0.85);
   }
 `;
