@@ -3,13 +3,9 @@ FROM mariadb:11.4
 USER root
 ADD my.cnf /etc/mysql/conf.d/my.cnf
 
-# MYSQL_PASSWORD / MYSQL_ROOT_PASSWORD are provided at runtime via the stack's
-# environment (and on first init only), not baked into the image.
-ARG MYSQL_DATABASE=default_database
-ARG MYSQL_USER=default_user
-
-ENV MYSQL_DATABASE=$MYSQL_DATABASE
-ENV MYSQL_USER=$MYSQL_USER
+# MYSQL_DATABASE, MYSQL_USER, and both passwords come from the stack's
+# environment at runtime. The image sets no defaults: the entrypoint connects to
+# MYSQL_DATABASE on every upgrade, and a default naming no database stops it.
 
 # Copy init sql file with env vars and then the script will substitute the variables.
 COPY ./init.sql /scripts/init.template.sql
