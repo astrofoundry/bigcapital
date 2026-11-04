@@ -2,10 +2,10 @@
 
 ## Node.js Version
 
-Always use Node.js 26 for this project. Before running any npm/pnpm/node commands:
+Always use Node.js 24 for this project. Before running any npm/pnpm/node commands:
 
 ```bash
-nvm use 26
+nvm use 24
 ```
 
 ## Package Manager
