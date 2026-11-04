@@ -2,4 +2,5 @@
 . "$(dirname -- "$0")/_/husky.sh"
 
 npm run format
-git add -A
+# Re-stage only what was staged, now formatted; never pick up untracked files.
+git update-index --again
