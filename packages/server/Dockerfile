@@ -49,14 +49,11 @@ COPY --chown=nodejs:nodejs package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY --chown=nodejs:nodejs packages/server/package.json ./packages/server/
 COPY --chown=nodejs:nodejs shared ./shared
 
-# Copy .husky directory (needed for husky install command)
-COPY --chown=nodejs:nodejs .husky ./.husky
-
-# Install only production dependencies
-# Install husky temporarily so prepare script can run, then remove it
-RUN pnpm add -D -w husky && \
+# Install only production dependencies. The root prepare script runs husky, a
+# devDependency, so drop the script instead of installing husky: adding and
+# removing husky made pnpm reinstall every devDependency into this image.
+RUN npm pkg delete scripts.prepare && \
     pnpm install --prod --frozen-lockfile && \
-    pnpm remove -w husky && \
     # Remove build dependencies to reduce image size
     apk del python3 build-base
 
