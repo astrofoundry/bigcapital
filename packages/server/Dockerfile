@@ -54,6 +54,8 @@ COPY --chown=nodejs:nodejs shared ./shared
 # removing husky made pnpm reinstall every devDependency into this image.
 RUN npm pkg delete scripts.prepare && \
     pnpm install --prod --frozen-lockfile && \
+    # The server and migrations run with node; pnpm's bundled tar carries CVE-2026-59873.
+    npm uninstall -g pnpm && \
     # Remove build dependencies to reduce image size
     apk del python3 build-base
 
